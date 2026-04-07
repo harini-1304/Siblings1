@@ -298,12 +298,10 @@ function FacultyDashboard() {
       );
     }
 
-    // Filter by has relatives or siblings in Engineering/Professional field
+    // Filter by has relatives in Engineering/Professional field
     if (filterHasRelatives) {
       const hasRelatives = filterHasRelatives === 'yes';
-      filtered = filtered.filter(student => 
-        (student.hasRelativesInIT === hasRelatives) || (student.hasSiblingsInIT === hasRelatives)
-      );
+      filtered = filtered.filter(student => student.hasRelativesInIT === hasRelatives);
     }
 
     // Filter by relative's city (case-insensitive with fuzzy matching - both relatives and siblings)
@@ -350,22 +348,12 @@ function FacultyDashboard() {
       });
     }
 
-    // Filter by company (case-insensitive - both relatives and siblings)
+    // Filter by relative's company (case-insensitive)
     if (filterCompany) {
       const companyQuery = filterCompany.toLowerCase();
-      filtered = filtered.filter(student => {
-        // Check Professional Contacts (relativesInIT)
-        const hasRelativeMatch = student.relativesInIT?.some(rel => 
-          rel.company?.toLowerCase().includes(companyQuery)
-        );
-        
-        // Check Siblings in Engineering/Professional Field
-        const hasSiblingMatch = student.siblings?.some(sibling => 
-          sibling.company?.toLowerCase().includes(companyQuery)
-        );
-        
-        return hasRelativeMatch || hasSiblingMatch;
-      });
+      filtered = filtered.filter(student =>
+        student.relativesInIT?.some(rel => rel.company.toLowerCase().includes(companyQuery))
+      );
     }
 
     setFilteredStudents(filtered);
@@ -841,9 +829,9 @@ function FacultyDashboard() {
                           </div>
                         </td>
                         <td className="td-center">
-                          {student.hasRelativesInIT || student.hasSiblingsInIT ? (
+                          {student.hasRelativesInIT ? (
                             <span className="badge badge-success">
-                              {(student.relativesInIT?.length || 0) + (student.siblings?.length || 0)} Contact(s)
+                              {student.relativesInIT?.length || 0} Contact(s)
                             </span>
                           ) : (
                             <span className="badge badge-gray">None</span>

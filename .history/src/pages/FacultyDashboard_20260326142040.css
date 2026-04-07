@@ -201,7 +201,7 @@
 
 /* Header */
 .dashboard-header {
-  background: linear-gradient(135deg, #354255 0%, #354255 100%);
+  background: linear-gradient(135deg, #21346d 0%, #3b297d 100%);
   padding: 24px 40px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   display: flex;

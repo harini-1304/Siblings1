@@ -566,15 +566,13 @@ function StudentForm() {
             </div>
           ))}
 
-          <div className="action-buttons">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={addSibling}
-            >
-              + Add Another Sibling
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={addSibling}
+          >
+            + Add Another Sibling
+          </button>
         </>
       )}
     </div>
@@ -743,15 +741,13 @@ function StudentForm() {
             </div>
           ))}
 
-          <div className="action-buttons">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={addRelative}
-            >
-              + Add Another Contact
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={addRelative}
+          >
+            + Add Another Contact
+          </button>
         </>
       )}
     </div>

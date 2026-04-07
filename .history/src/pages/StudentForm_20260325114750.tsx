@@ -1,6 +1,6 @@
 // Student Form - Google Forms Style Multi-Step Form
 import { useState } from 'react';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Student, RelativeInIT } from '../types';
 import './StudentForm.css';
@@ -51,18 +51,6 @@ function StudentForm() {
     'Siblings in Engineering',
     'Professional Contacts'
   ];
-
-  // Function to check if roll number already exists
-  const checkRollNumberExists = async (rollNum: string): Promise<boolean> => {
-    try {
-      const q = query(collection(db, 'students'), where('rollNumber', '==', rollNum));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (err) {
-      console.error('Error checking roll number:', err);
-      return false;
-    }
-  };
 
   // Function to add a new relative to the list
   const addRelative = () => {
@@ -180,14 +168,6 @@ function StudentForm() {
     setError('');
 
     try {
-      // Check if roll number already exists
-      const rollNumberExists = await checkRollNumberExists(rollNumber);
-      if (rollNumberExists) {
-        setError('This roll number is already registered. Please use a different roll number.');
-        setLoading(false);
-        return;
-      }
-
       // Prepare the student data object
       const studentData: Partial<Student> = {
         studentName,
@@ -566,15 +546,13 @@ function StudentForm() {
             </div>
           ))}
 
-          <div className="action-buttons">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={addSibling}
-            >
-              + Add Another Sibling
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={addSibling}
+          >
+            + Add Another Sibling
+          </button>
         </>
       )}
     </div>
@@ -743,15 +721,13 @@ function StudentForm() {
             </div>
           ))}
 
-          <div className="action-buttons">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={addRelative}
-            >
-              + Add Another Contact
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={addRelative}
+          >
+            + Add Another Contact
+          </button>
         </>
       )}
     </div>

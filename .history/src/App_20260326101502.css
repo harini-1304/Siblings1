@@ -9,8 +9,8 @@
   flex: 1;
   background: linear-gradient(135deg, #e8dcc8 0%, #f5f1e8 100%);
   background-image: 
-    linear-gradient(135deg, rgba(232, 220, 200, 0.45), rgba(245, 241, 232, 0.45)),
-    url('/images/bg.jpeg');
+    linear-gradient(135deg, rgba(232, 220, 200, 0.85), rgba(245, 241, 232, 0.85)),
+    url('../../../images/bg.jpeg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

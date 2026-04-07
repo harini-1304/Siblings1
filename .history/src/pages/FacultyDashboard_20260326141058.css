@@ -45,15 +45,15 @@
 .dashboard-subtitle {
   font-size: 14px;
   margin: 0;
-  color: #ffe6e0;
+  color: #ecf0f1;
   font-weight: 500;
 }
 
 .btn-logout {
-  background: white;
-  color: #e74c3c;
+  background: #e74c3c;
+  color: white;
   padding: 10px 24px;
-  border: 2px solid white;
+  border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 700;
@@ -61,9 +61,7 @@
 }
 
 .btn-logout:hover {
-  background: transparent;
-  color: white;
-  border-color: white;
+  background: #c0392b;
   transform: translateY(-2px);
 }
 
@@ -201,7 +199,7 @@
 
 /* Header */
 .dashboard-header {
-  background: linear-gradient(135deg, #354255 0%, #354255 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 24px 40px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   display: flex;
