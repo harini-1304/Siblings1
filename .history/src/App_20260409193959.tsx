@@ -8,8 +8,6 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import FacultyLogin from './pages/FacultyLogin';
 import FacultySignup from './pages/FacultySignup';
 import FacultyDashboard from './pages/FacultyDashboard';
-import StudentLogin from './pages/StudentLogin';
-import StudentSignup from './pages/StudentSignup';
 import StudentForm from './pages/StudentForm';
 
 function App() {
@@ -39,9 +37,7 @@ function App() {
               } 
             />
             
-            {/* Student routes */}
-            <Route path="/student/login" element={<StudentLogin />} />
-            <Route path="/student/signup" element={<StudentSignup />} />
+            {/* Student form route - this will be like Google Forms */}
             <Route 
               path="/student/form" 
               element={

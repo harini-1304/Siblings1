@@ -1,16 +1,16 @@
-// Faculty Signup/Registration Page
+// Student Signup/Registration Page
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import './FacultySignup.css';
+import './FacultySignup.css'; // Reuse styling
 
-function FacultySignup() {
+function StudentSignup() {
   const navigate = useNavigate();
   
   // State for form fields
-  const [employeeId, setEmployeeId] = useState('');
+  const [rollNumber, setRollNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,14 +23,14 @@ function FacultySignup() {
     setError('');
     
     // Validation 1: Check if all fields are filled
-    if (!employeeId || !email || !password || !confirmPassword) {
+    if (!rollNumber || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
       return;
     }
     
-    // Validation 2: Check if email ends with @psgitech.ac.in
-    if (!email.endsWith('@psgitech.ac.in')) {
-      setError('Email must end with @psgitech.ac.in');
+    // Validation 2: Check password strength (minimum 6 characters)
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
     
@@ -40,44 +40,27 @@ function FacultySignup() {
       return;
     }
     
-    // Validation 4: Check password strength (minimum 6 characters)
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-    
     setLoading(true);
     
     try {
       // Step 1: Create user account in Firebase Authentication
-      // This creates login credentials
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Step 2: Store user role and info in 'users' collection (accessible by all user types)
-      // This is where ProtectedRoute checks for user roles
+      // Step 2: Store user role and info in 'users' collection
       await setDoc(doc(db, 'users', user.uid), {
-        role: 'faculty',
+        role: 'student',
         email: email,
-        employeeId: employeeId,
+        rollNumber: rollNumber,
         createdAt: new Date()
       });
       
-      // Step 3: Also store faculty-specific info in 'faculties' collection
-      await setDoc(doc(db, 'faculties', user.uid), {
-        employeeId: employeeId,
-        email: email,
-        createdAt: new Date(),
-        role: 'faculty'
-      });
-      
-      // Step 4: Navigate to dashboard after successful signup
-      navigate('/faculty/dashboard');
+      // Step 3: Navigate to form after successful signup
+      navigate('/student/form');
       
     } catch (err: any) {
       console.error('Signup error:', err);
       
-      // Handle different error types
       if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Please login instead.');
       } else if (err.code === 'auth/weak-password') {
@@ -96,44 +79,42 @@ function FacultySignup() {
     <div className="signup-container">
       <div className="signup-card">
         <div className="signup-header">
-          <h1>Faculty Signup</h1>
-          <p>Create your account to access the Student Portal</p>
+          <h1>Student Registration</h1>
+          <p>Create your account to fill the student form</p>
         </div>
 
         <form onSubmit={handleSignup} className="signup-form">
           
-          {/* Employee ID Field */}
+          {/* Roll Number Field */}
           <div className="form-group">
-            <label htmlFor="employeeId" className="form-label">
-              Employee ID *
+            <label htmlFor="rollNumber" className="form-label">
+              Roll Number *
             </label>
             <input
               type="text"
-              id="employeeId"
+              id="rollNumber"
               className="form-input"
-              placeholder="e.g., FAC001"
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
+              placeholder="e.g., 22B001"
+              value={rollNumber}
+              onChange={(e) => setRollNumber(e.target.value)}
               disabled={loading}
             />
-            <small className="form-hint">Your official employee ID</small>
           </div>
 
           {/* Email Field */}
           <div className="form-group">
             <label htmlFor="email" className="form-label">
-              PSGiTech Email *
+              Email *
             </label>
             <input
               type="email"
               id="email"
               className="form-input"
-              placeholder="yourname@psgitech.ac.in"
+              placeholder="your.email@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
-            <small className="form-hint">Must end with @psgitech.ac.in</small>
           </div>
 
           {/* Password Field */}
@@ -168,31 +149,29 @@ function FacultySignup() {
             />
           </div>
 
-          {/* Error Message */}
+          {/* Error Message Display */}
           {error && <div className="error-message">{error}</div>}
 
           {/* Submit Button */}
-          <button 
-            type="submit" 
-            className="btn btn-primary btn-full"
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
             disabled={loading}
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            {loading ? 'Creating account...' : 'Register & Continue'}
           </button>
-
-          {/* Link to Login */}
-          <div className="signup-footer">
-            <p>
-              Already have an account?{' '}
-              <Link to="/faculty/login" className="link">
-                Login
-              </Link>
-            </p>
-          </div>
         </form>
+
+        {/* Link to login */}
+        <p className="auth-footer">
+          Already have an account?{' '}
+          <Link to="/student/login" className="auth-link">
+            Student Login
+          </Link>
+        </p>
       </div>
     </div>
   );
 }
 
-export default FacultySignup;
+export default StudentSignup;
