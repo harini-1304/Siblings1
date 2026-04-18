@@ -261,6 +261,48 @@ def refresh_token():
         return jsonify({'error': str(e)}), 500
 
 
+def _send_reset_otp_email(recipient_email: str, recipient_name: str, otp: str, title: str) -> None:
+        sender_email = os.getenv('SENDER_EMAIL')
+        sender_password = os.getenv('SENDER_PASSWORD')
+        smtp_server_addr = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+
+        if not sender_email or not sender_password:
+                raise RuntimeError('Email credentials are not configured')
+
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = title
+
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <h2 style="color: #2c3e50;">{title}</h2>
+                <p>Hi {recipient_name or 'User'},</p>
+                <p>Your One-Time Password (OTP) for password reset is:</p>
+                <p style="margin: 30px 0; text-align: center;">
+                    <span style="background-color: #3498db; color: white; padding: 15px 30px; font-size: 24px; font-weight: bold; border-radius: 4px; letter-spacing: 2px; display: inline-block;">
+                        {otp}
+                    </span>
+                </p>
+                <p style="color: #e74c3c; font-size: 14px;"><strong>⏰ This OTP will expire in 10 minutes.</strong></p>
+                <p style="color: #7f8c8d; font-size: 13px;">
+                    <strong>Important:</strong><br>
+                    Never share this OTP with anyone.
+                </p>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(body, 'html'))
+
+        with smtplib.SMTP(smtp_server_addr, smtp_port) as server:
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.send_message(msg)
+
+
 @auth_bp.route('/forgot-password', methods=['POST'])
 @cross_origin()
 def forgot_password():
@@ -309,81 +351,13 @@ def forgot_password():
         
         # Send OTP via email
         try:
-            sender_email = os.getenv('SENDER_EMAIL')
-            sender_password = os.getenv('SENDER_PASSWORD')
-            smtp_server_addr = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-            smtp_port = int(os.getenv('SMTP_PORT', 587))
-            
-            if not sender_email or not sender_password:
-                print("⚠️ Email credentials not configured in .env file")
-                return jsonify({
-                    'message': 'If the email exists, an OTP will be sent shortly.'
-                }), 200
-            
-            # Create email with OTP
-            msg = MIMEMultipart()
-            msg['From'] = sender_email
-            msg['To'] = email
-            msg['Subject'] = 'ProConnect - Password Reset OTP'
-            
-            body = f"""
-            <html>
-                <body style="font-family: Arial, sans-serif; color: #333;">
-                    <h2 style="color: #2c3e50;">Password Reset OTP</h2>
-                    <p>Hi {user.get('name', 'Faculty Member')},</p>
-                    <p>Your One-Time Password (OTP) for password reset is:</p>
-                    
-                    <p style="margin: 30px 0; text-align: center;">
-                        <span style="background-color: #3498db; color: white; padding: 15px 30px; font-size: 24px; font-weight: bold; border-radius: 4px; letter-spacing: 2px; display: inline-block;">
-                            {otp}
-                        </span>
-                    </p>
-                    
-                    <p style="color: #e74c3c; font-size: 14px;"><strong>⏰ This OTP will expire in 10 minutes.</strong></p>
-                    
-                    <p style="color: #7f8c8d; font-size: 13px;">
-                        <strong>Important:</strong> 
-                        <ul>
-                            <li>Never share this OTP with anyone</li>
-                            <li>ProConnect will never ask you to share your OTP</li>
-                            <li>If you didn't request this, ignore this email</li>
-                        </ul>
-                    </p>
-                    
-                    <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 20px 0;">
-                    
-                    <p style="font-size: 12px; color: #7f8c8d;">
-                        Best regards,<br>
-                        ProConnect Team<br>
-                        PSGiTech Student Portal
-                    </p>
-                </body>
-            </html>
-            """
-            
-            msg.attach(MIMEText(body, 'html'))
-            
-            # Send email via SMTP
             print(f"📧 Sending OTP to {email}...")
-            with smtplib.SMTP(smtp_server_addr, smtp_port) as server:
-                server.starttls()
-                server.login(sender_email, sender_password)
-                server.send_message(msg)
-            
+            _send_reset_otp_email(email, user.get('name', 'Faculty Member'), otp, 'ProConnect - Password Reset OTP')
             print(f"✅ OTP sent to {email}")
-            
-        except smtplib.SMTPAuthenticationError as email_error:
-            print(f"⚠️ Email authentication failed: {str(email_error)}")
-            print(f"🔐 OTP generated: {otp}")
-            return jsonify({
-                'message': 'If the email exists, an OTP will be sent shortly.'
-            }), 200
         except Exception as email_error:
             print(f"⚠️ Failed to send email: {str(email_error)}")
             print(f"🔐 OTP generated: {otp}")
-            return jsonify({
-                'message': 'If the email exists, an OTP will be sent shortly.'
-            }), 200
+            return jsonify({'error': 'Unable to send reset email right now. Please try again later.'}), 500
         
         return jsonify({
             'message': 'If the email exists, an OTP will be sent shortly.'
@@ -394,6 +368,125 @@ def forgot_password():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
+@auth_bp.route('/student/forgot-password', methods=['POST'])
+@cross_origin()
+def student_forgot_password():
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        roll_number = data.get('rollNumber', '').strip()
+
+        if not email or not roll_number:
+            return jsonify({'error': 'Email and roll number are required'}), 400
+
+        collections = get_collections()
+        students_collection = collections['students']
+
+        student = students_collection.find_one({
+            'basic_info.roll_number': roll_number,
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
+        })
+
+        if not student:
+            return jsonify({'error': 'No matching student record found'}), 404
+
+        otp = str(random.randint(100000, 999999))
+        otp_expiry = datetime.utcnow() + timedelta(minutes=10)
+
+        students_collection.update_one(
+            {'_id': student['_id']},
+            {'$set': {
+                'student_reset_otp': otp,
+                'student_otp_expiry': otp_expiry
+            }}
+        )
+
+        try:
+            recipient_name = student.get('basic_info', {}).get('student_name', 'Student')
+            print(f"📧 Sending student OTP to {email}...")
+            _send_reset_otp_email(email, recipient_name, otp, 'ProConnect - Student Password Reset OTP')
+            print(f"✅ Student OTP sent to {email}")
+        except Exception as email_error:
+            print(f"⚠️ Failed to send student email: {str(email_error)}")
+            return jsonify({'error': 'Unable to send reset email right now. Please try again later.'}), 500
+
+        return jsonify({'message': 'If the email exists, an OTP will be sent shortly.'}), 200
+
+    except Exception as e:
+        print(f"❌ Error in student_forgot_password: {str(e)}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
+@auth_bp.route('/student/verify-otp', methods=['POST'])
+@cross_origin()
+def student_verify_otp():
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        roll_number = data.get('rollNumber', '').strip()
+        otp = data.get('otp', '').strip()
+
+        if not email or not roll_number or not otp:
+            return jsonify({'error': 'Email, roll number and OTP are required'}), 400
+
+        collections = get_collections()
+        students_collection = collections['students']
+
+        student = students_collection.find_one({
+            'basic_info.roll_number': roll_number,
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
+        })
+
+        if not student:
+            return jsonify({'error': 'Invalid email, roll number or OTP'}), 401
+
+        stored_otp = student.get('student_reset_otp')
+        otp_expiry = student.get('student_otp_expiry')
+
+        if not stored_otp or not otp_expiry:
+            return jsonify({'error': 'No OTP found. Please request a new one'}), 401
+
+        if datetime.utcnow() > otp_expiry:
+            students_collection.update_one(
+                {'_id': student['_id']},
+                {'$unset': {'student_reset_otp': 1, 'student_otp_expiry': 1}}
+            )
+            return jsonify({'error': 'OTP has expired. Please request a new one'}), 401
+
+        if stored_otp != otp:
+            return jsonify({'error': 'Invalid email, roll number or OTP'}), 401
+
+        reset_payload = {
+            'student_id': str(student['_id']),
+            'email': email,
+            'roll_number': roll_number,
+            'type': 'student_password_reset',
+            'exp': datetime.utcnow() + timedelta(minutes=15),
+            'iat': datetime.utcnow()
+        }
+        reset_token = jwt.encode(reset_payload, Config.JWT_SECRET, algorithm='HS256')
+
+        students_collection.update_one(
+            {'_id': student['_id']},
+            {'$unset': {'student_reset_otp': 1, 'student_otp_expiry': 1}}
+        )
+
+        return jsonify({
+            'message': 'OTP verified successfully',
+            'resetToken': reset_token
+        }), 200
+
+    except Exception as e:
+        print(f"Error in student_verify_otp: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @auth_bp.route('/verify-otp', methods=['POST'])

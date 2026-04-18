@@ -2,12 +2,112 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { studentAPI } from '../services/api';
-import { Student, RelativeInIT, ParentDetails } from '../types';
+import { RelativeInIT, ParentDetails } from '../types';
 import './StudentForm.css';
 
 // This component creates a multi-step form for students to fill their details
 function StudentForm() {
   const navigate = useNavigate();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(true);
+  const [hasExistingRecord, setHasExistingRecord] = useState(false);
+  const [showStudentDashboard, setShowStudentDashboard] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+
+  const handleStudentLogout = () => {
+    sessionStorage.removeItem('studentEmail');
+    sessionStorage.removeItem('studentRollNumber');
+    navigate('/student/login');
+  };
+
+  const handleEditFromDashboard = () => {
+    setShowStudentDashboard(false);
+    setCurrentStep(0);
+    setError('');
+    setStatusMessage('');
+    if (hasExistingRecord) {
+      setIsEditMode(true);
+    }
+  };
+
+  const normalizeParent = (parent: any, fallback: ParentDetails): ParentDetails => {
+    if (!parent) {
+      return fallback;
+    }
+    return {
+      ...fallback,
+      ...parent,
+      status: parent.status || 'alive',
+    };
+  };
+
+  const loadExistingStudentData = async (rollNumber: string, email: string) => {
+    try {
+      const existing = await studentAPI.getSelf(rollNumber, email);
+      if (!existing) {
+        return;
+      }
+
+      const basicInfo = existing.basic_info || {};
+      const parentDetails = existing.parent_details || {};
+
+      setStudentName(basicInfo.student_name || '');
+      setRollNumber(basicInfo.roll_number || rollNumber);
+      setMobileNo(basicInfo.mobile_no || '');
+      setParentMobile(basicInfo.parent_mobile || '');
+      setPersonalMail(basicInfo.personal_mail || '');
+      setCollegeMail(basicInfo.college_mail || '');
+      setBranch(basicInfo.branch || '');
+      setSection(basicInfo.section || '');
+      setYear(basicInfo.year || '');
+
+      const motherData = parentDetails.mother;
+      const fatherData = parentDetails.father;
+      const guardianData = parentDetails.guardian;
+
+      setMotherAlive(!!motherData);
+      setFatherAlive(!!fatherData);
+      setGuardianAlive(!!guardianData);
+      setHasGuardian(!!guardianData);
+
+      setMother((prev) => normalizeParent(motherData, prev));
+      setFather((prev) => normalizeParent(fatherData, prev));
+      setGuardian(guardianData ? normalizeParent(guardianData, defaultParentState) : null);
+
+      const storedSiblings = Array.isArray(existing.siblings)
+        ? existing.siblings
+        : (existing.siblings?.siblings_list || []);
+      const normalizedSiblings = storedSiblings.map((sibling: any) => ({
+        ...sibling,
+        company: sibling.company || sibling.organizationName || '',
+        organizationName: sibling.organizationName || sibling.company || '',
+      }));
+      const hasSiblingFlag = typeof existing.siblings?.has_siblings_in_it === 'boolean'
+        ? existing.siblings.has_siblings_in_it
+        : normalizedSiblings.length > 0;
+      setSiblings(normalizedSiblings);
+      setHasSiblingsInIT(hasSiblingFlag);
+
+      const storedRelatives = Array.isArray(existing.relatives)
+        ? existing.relatives
+        : (existing.relatives_in_it?.relatives_list || []);
+      const hasRelativeFlag = typeof existing.relatives_in_it?.has_relatives_in_it === 'boolean'
+        ? existing.relatives_in_it.has_relatives_in_it
+        : storedRelatives.length > 0;
+      setRelativesInIT(storedRelatives);
+      setHasRelativesInIT(hasRelativeFlag);
+
+      setIsEditMode(true);
+      setHasExistingRecord(true);
+      setShowStudentDashboard(true);
+    } catch (err: any) {
+      if (err?.response?.status !== 404) {
+        console.error('Failed to load existing student form:', err);
+      }
+      setHasExistingRecord(false);
+      setShowStudentDashboard(false);
+    }
+  };
 
   // Check if student is logged in (via sessionStorage)
   useEffect(() => {
@@ -17,11 +117,16 @@ function StudentForm() {
     if (!studentEmail || !studentRollNumber) {
       // Not logged in, redirect to student login
       navigate('/student/login');
+      return;
     }
+
+    loadExistingStudentData(studentRollNumber, studentEmail).finally(() => {
+      setIsLoadingExisting(false);
+    });
   }, [navigate]);
 
   // Step tracking: which section of the form are we on?
-  // Steps: 0=Basic Info, 1=Parent Details, 2=Siblings, 3=Relatives, 4=Success
+  // Steps: 0=Basic Info, 1=Parent Details, 2=Siblings, 3=Relatives
   const [currentStep, setCurrentStep] = useState(0);
   
   // Loading and error states
@@ -134,6 +239,34 @@ function StudentForm() {
     const updated = [...relativesInIT];
     updated[index] = { ...updated[index], [field]: value };
     setRelativesInIT(updated);
+  };
+
+  const normalizeSiblingRecord = (sibling: any) => ({
+    ...sibling,
+    company: (sibling.company || sibling.organizationName || '').trim(),
+    organizationName: (sibling.organizationName || sibling.company || '').trim(),
+    city: (sibling.city || sibling.workCity || '').trim(),
+  });
+
+  const getFilledSiblingRecords = () => {
+    return siblings
+      .map((sibling) => normalizeSiblingRecord(sibling))
+      .filter((sibling) => Boolean(
+        sibling.name ||
+        sibling.whatsappNumber ||
+        sibling.education ||
+        sibling.occupationType ||
+        sibling.company ||
+        sibling.city ||
+        sibling.officeAddress ||
+        sibling.officeContactNumber ||
+        sibling.officeEmail ||
+        sibling.businessName ||
+        sibling.businessType ||
+        sibling.businessIndustry ||
+        sibling.businessRole ||
+        sibling.businessAddress
+      ));
   };
 
   // Function to add a new sibling
@@ -250,18 +383,27 @@ function StudentForm() {
         break;
       case 2: // Siblings
         if (hasSiblingsInIT) {
-          for (let i = 0; i < siblings.length; i++) {
-            if (!siblings[i].name || !siblings[i].whatsappNumber || !siblings[i].education || !siblings[i].occupationType) {
+          const filledSiblings = getFilledSiblingRecords();
+
+          if (filledSiblings.length === 0) {
+            setError('Please add at least one sibling with details');
+            return false;
+          }
+
+          for (let i = 0; i < filledSiblings.length; i++) {
+            const sibling = filledSiblings[i];
+
+            if (!sibling.name || !sibling.whatsappNumber || !sibling.education || !sibling.occupationType) {
               setError('Please fill all required sibling details');
               return false;
             }
-            if (siblings[i].occupationType === 'employed') {
-              if (!siblings[i].employmentType || !siblings[i].organizationName || !siblings[i].sector || !siblings[i].designation || siblings[i].yearsOfExperience === null || siblings[i].yearsOfExperience === undefined || !siblings[i].officeAddress || !siblings[i].officeContactNumber || !siblings[i].officeEmail) {
+            if (sibling.occupationType === 'employed') {
+              if (!sibling.employmentType || !sibling.company || !sibling.sector || !sibling.designation || !sibling.city || sibling.yearsOfExperience === null || sibling.yearsOfExperience === undefined || !sibling.officeAddress || !sibling.officeContactNumber || !sibling.officeEmail) {
                 setError('Please fill all required employment details for sibling ' + (i + 1));
                 return false;
               }
-            } else if (siblings[i].occupationType === 'self-employed') {
-              if (!siblings[i].businessName || !siblings[i].businessType || !siblings[i].businessIndustry || !siblings[i].businessRole || !siblings[i].businessAddress) {
+            } else if (sibling.occupationType === 'self-employed') {
+              if (!sibling.businessName || !sibling.businessType || !sibling.businessIndustry || !sibling.businessRole || !sibling.businessAddress) {
                 setError('Please fill all required business details for sibling ' + (i + 1));
                 return false;
               }
@@ -334,20 +476,20 @@ function StudentForm() {
           father: fatherAlive ? father : null,
           guardian: (hasGuardian && guardian) ? guardian : null
         },
-        siblings: {
-          has_siblings_in_it: hasSiblingsInIT,
-          siblings_list: siblings
-        },
-        relatives_in_it: {
-          has_relatives_in_it: hasRelativesInIT,
-          relatives_list: relativesInIT
-        }
+        siblings: hasSiblingsInIT ? getFilledSiblingRecords() : [],
+        relatives: hasRelativesInIT ? relativesInIT : []
       };
 
       // Call backend API to submit form
-      await studentAPI.submitForm(studentData);
-      
-      setCurrentStep(4); // Move to success page
+      const result = await studentAPI.submitForm(studentData);
+      if (typeof result?.is_update === 'boolean') {
+        setIsEditMode(result.is_update);
+      }
+
+      setHasExistingRecord(true);
+      setShowStudentDashboard(true);
+      setStatusMessage(result?.is_update ? 'Details updated successfully.' : 'Form submitted successfully.');
+      setCurrentStep(0);
     } catch (err: any) {
       console.error('Submit error:', err);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to submit form';
@@ -368,12 +510,133 @@ function StudentForm() {
         return renderSiblingsSection();
       case 3:
         return renderRelativesSection();
-      case 4:
-        return renderSuccessMessage();
       default:
         return null;
     }
   };
+
+  const formatFieldLabel = (key: string) => {
+    return key
+      .replace(/_/g, ' ')
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (ch) => ch.toUpperCase());
+  };
+
+  const renderFieldGrid = (record: Record<string, any>, excludedKeys: string[] = []) => {
+    const entries = Object.entries(record).filter(([key, value]) => {
+      if (excludedKeys.includes(key)) {
+        return false;
+      }
+      return value !== undefined && value !== null && value !== '';
+    });
+
+    if (entries.length === 0) {
+      return <p className="dashboard-empty">No details available.</p>;
+    }
+
+    return (
+      <div className="dashboard-field-grid">
+        {entries.map(([key, value]) => {
+          const printableValue =
+            typeof value === 'boolean'
+              ? value
+                ? 'Yes'
+                : 'No'
+              : String(value);
+
+          return (
+            <div key={key} className="dashboard-field-row">
+              <span className="dashboard-label">{formatFieldLabel(key)}</span>
+              <span className="dashboard-value">{printableValue}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderPersonCard = (title: string, data: Record<string, any> | null) => (
+    <div className="dashboard-detail-card">
+      <h4>{title}</h4>
+      {data ? renderFieldGrid(data) : <p className="dashboard-empty">No details available.</p>}
+    </div>
+  );
+
+  const renderStudentDashboard = () => (
+    <div className="form-content">
+      <div className="form-card dashboard-view-card">
+        <h2 className="dashboard-title">Your Submitted Details</h2>
+        {statusMessage && <div className="dashboard-status-message">{statusMessage}</div>}
+
+        <section className="dashboard-section">
+          <h3>Basic Information</h3>
+          {renderFieldGrid({
+            studentName,
+            rollNumber,
+            branch,
+            section,
+            year,
+            mobileNo,
+            parentMobile,
+            personalMail,
+            collegeMail,
+          })}
+        </section>
+
+        <section className="dashboard-section">
+          <h3>Parent and Guardian Details</h3>
+          <div className="dashboard-card-grid">
+            {renderPersonCard("Mother's Details", motherAlive ? mother : null)}
+            {renderPersonCard("Father's Details", fatherAlive ? father : null)}
+            {renderPersonCard("Guardian's Details", hasGuardian && guardianAlive ? guardian : null)}
+          </div>
+        </section>
+
+        <section className="dashboard-section">
+          <h3>Siblings in Professional Field</h3>
+          {siblings.length === 0 ? (
+            <p className="dashboard-empty">No sibling details added.</p>
+          ) : (
+            <div className="dashboard-card-grid">
+              {siblings.map((sibling, index) => (
+                <div key={index} className="dashboard-detail-card">
+                  <h4>{`Sibling ${index + 1}`}</h4>
+                  {renderFieldGrid(sibling, ['organizationName'])}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="dashboard-section">
+          <h3>Professional Contacts</h3>
+          {relativesInIT.length === 0 ? (
+            <p className="dashboard-empty">No professional contact details added.</p>
+          ) : (
+            <div className="dashboard-card-grid">
+              {relativesInIT.map((relative, index) => (
+                <div key={index} className="dashboard-detail-card">
+                  <h4>{`Contact ${index + 1}`}</h4>
+                  {renderFieldGrid(relative as unknown as Record<string, any>)}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <div className="form-nav-buttons dashboard-actions">
+          <button type="button" className="btn btn-primary" onClick={handleEditFromDashboard}>
+            Edit Details
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={handleStudentLogout}>
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Step 1: Basic Information
   const renderBasicInfo = () => (
@@ -1047,18 +1310,6 @@ function StudentForm() {
                     </select>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Organization/Company Name *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g., Google, TCS, L&T, BHEL, Government Department"
-                      value={sibling.organizationName || ''}
-                      onChange={(e) => updateSibling(index, 'organizationName', e.target.value)}
-                      required
-                    />
-                  </div>
-
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Sector/Industry *</label>
@@ -1087,13 +1338,16 @@ function StudentForm() {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="form-label">Company/Organization Name *</label>
+                      <label className="form-label">Organization/Company Name *</label>
                       <input
                         type="text"
                         className="form-input"
                         placeholder="e.g., Google, TCS, Infosys"
-                        value={sibling.company || ''}
-                        onChange={(e) => updateSibling(index, 'company', e.target.value)}
+                        value={sibling.company || sibling.organizationName || ''}
+                        onChange={(e) => {
+                          updateSibling(index, 'company', e.target.value);
+                          updateSibling(index, 'organizationName', e.target.value);
+                        }}
                         required
                       />
                     </div>
@@ -1651,27 +1905,17 @@ function StudentForm() {
     </div>
   );
 
-  // Success Message
-  const renderSuccessMessage = () => (
-    <div className="success-container">
-      <div className="success-icon">✓</div>
-      <h2>Form Submitted Successfully!</h2>
-      <p>Thank you for submitting your information. Your data has been recorded.</p>
-      <p>The faculty can now view your details in their dashboard.</p>
-      <button 
-        onClick={() => {
-          // Clear session storage and go back to login
-          sessionStorage.removeItem('studentEmail');
-          sessionStorage.removeItem('studentRollNumber');
-          navigate('/student/login');
-        }}
-        className="btn btn-primary"
-        style={{ marginTop: '20px' }}
-      >
-        Return to Login
-      </button>
-    </div>
-  );
+  if (isLoadingExisting) {
+    return (
+      <div className="student-form-container">
+        <div className="form-content">
+          <div className="form-card">
+            <p style={{ textAlign: 'center', padding: '20px 0' }}>Loading your saved form...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="student-form-container">
@@ -1679,10 +1923,13 @@ function StudentForm() {
       <div className="form-header">
         <h1>Student Information Form</h1>
         <p>PSGiTech Computer Science Department - Student Database</p>
+        {showStudentDashboard && hasExistingRecord && (
+          <p style={{ marginTop: '10px', fontWeight: 600 }}>Welcome back. Your latest submitted details are shown below.</p>
+        )}
       </div>
 
       {/* Progress indicator */}
-      {currentStep < 5 && (
+      {!showStudentDashboard && currentStep < 4 && (
         <div className="progress-container">
           <div className="progress-steps">
             {steps.map((step, index) => (
@@ -1698,7 +1945,8 @@ function StudentForm() {
         </div>
       )}
 
-      {/* Main form content */}
+      {/* Student dashboard content */}
+      {showStudentDashboard ? renderStudentDashboard() : (
       <div className="form-content">
         <div className="form-card">
           {renderStep()}
@@ -1737,13 +1985,14 @@ function StudentForm() {
                   onClick={handleSubmit}
                   disabled={loading}
                 >
-                  {loading ? 'Submitting...' : 'Submit Form'}
+                  {loading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update Form' : 'Submit Form')}
                 </button>
               )}
             </div>
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

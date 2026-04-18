@@ -9,6 +9,8 @@ function StudentSignup() {
   // State for form fields
   const [rollNumber, setRollNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,14 +20,38 @@ function StudentSignup() {
     setError('');
     
     // Validation 1: Check if all fields are filled
-    if (!rollNumber || !email) {
+    if (!rollNumber || !email || !password || !confirmPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
     
     setLoading(true);
     
     try {
+      const storedAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+      const existingAccount = storedAccounts.find((acc: any) => acc.email.toLowerCase() === email.toLowerCase());
+      if (existingAccount) {
+        setError('Account already exists. Please login.');
+        return;
+      }
+
+      storedAccounts.push({
+        email,
+        rollNumber,
+        password,
+      });
+      localStorage.setItem('studentAccounts', JSON.stringify(storedAccounts));
+
       // Store student info in sessionStorage for reference
       sessionStorage.setItem('studentRollNumber', rollNumber);
       sessionStorage.setItem('studentEmail', email);
@@ -83,6 +109,38 @@ function StudentSignup() {
             />
           </div>
 
+          {/* Password Field */}
+          <div className="form-group">
+            <label htmlFor="password" className="form-label">
+              Password *
+            </label>
+            <input
+              type="password"
+              id="password"
+              className="form-input"
+              placeholder="Minimum 6 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          {/* Confirm Password Field */}
+          <div className="form-group">
+            <label htmlFor="confirmPassword" className="form-label">
+              Confirm Password *
+            </label>
+            <input
+              type="password"
+              id="confirmPassword"
+              className="form-input"
+              placeholder="Re-enter your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
           {/* Error Message Display */}
           {error && <div className="error-message">{error}</div>}
 
@@ -99,7 +157,7 @@ function StudentSignup() {
         {/* Link to login */}
         <p className="auth-footer">
           Already have an account?{' '}
-          <Link to="/student/login" className="auth-link">
+          <Link to="/student/login" state={{ email }} className="auth-link">
             Student Login
           </Link>
         </p>

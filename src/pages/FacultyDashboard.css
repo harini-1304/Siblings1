@@ -304,6 +304,17 @@
   margin-bottom: 20px;
 }
 
+
+.dashboard-error-banner {
+  background: #fff3cd;
+  color: #7a5a00;
+  border: 1px solid #ffe08a;
+  border-left: 5px solid #f0ad4e;
+  padding: 14px 16px;
+  border-radius: 10px;
+  margin: 18px 0 30px;
+  font-weight: 600;
+}
 .filter-group {
   display: flex;
   flex-direction: column;

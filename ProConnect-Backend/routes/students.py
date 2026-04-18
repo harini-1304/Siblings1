@@ -10,6 +10,64 @@ from models.student import Student
 from middleware.auth_middleware import token_required
 from . import students_bp
 
+
+def serialize_mongo_value(value):
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            return value.decode('utf-8')
+        except Exception:
+            return str(value)
+    if isinstance(value, list):
+        return [serialize_mongo_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: serialize_mongo_value(item) for key, item in value.items()}
+    return value
+
+
+def serialize_student_document(student):
+    return {key: serialize_mongo_value(value) for key, value in student.items()}
+
+
+@students_bp.route('/self', methods=['GET'])
+@cross_origin()
+def get_student_self():
+    """
+    Get student record for self-edit flow.
+
+    Query Parameters:
+        - roll_number: Student roll number (required)
+        - email: Student email used during login/signup (required)
+    """
+    try:
+        roll_number = request.args.get('roll_number', '').strip()
+        email = request.args.get('email', '').strip().lower()
+
+        if not roll_number or not email:
+            return jsonify({'error': 'roll_number and email are required'}), 400
+
+        collections = get_collections()
+        students = collections['students']
+
+        student = students.find_one({
+            'basic_info.roll_number': roll_number,
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
+        })
+
+        if not student:
+            return jsonify({'error': 'Student record not found'}), 404
+
+        return jsonify(serialize_student_document(student)), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @students_bp.route('/submit', methods=['POST'])
 @cross_origin()
 def submit_student_form():
@@ -143,10 +201,8 @@ def get_all_students(current_user):
         
         # Get paginated results
         student_list = list(students.find(filter_query).skip(skip).limit(limit))
-        
-        # Convert ObjectId to string for JSON serialization
-        for student in student_list:
-            student['_id'] = str(student['_id'])
+
+        student_list = [serialize_student_document(student) for student in student_list]
         
         return jsonify({
             'students': student_list,
@@ -183,10 +239,7 @@ def get_student(student_id, current_user):
         if not student:
             return jsonify({'error': 'Student not found'}), 404
         
-        # Convert ObjectId to string
-        student['_id'] = str(student['_id'])
-        
-        return jsonify(student), 200
+        return jsonify(serialize_student_document(student)), 200
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500

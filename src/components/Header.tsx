@@ -6,6 +6,7 @@ import '../styles/Header.css';
 function Header() {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sessionStudentEmail, setSessionStudentEmail] = useState<string | null>(sessionStorage.getItem('studentEmail'));
   const [showDropdown, setShowDropdown] = useState(false);
 
   // Function to extract email from token
@@ -27,6 +28,7 @@ function Header() {
   useEffect(() => {
     const email = extractEmailFromToken();
     setUserEmail(email);
+    setSessionStudentEmail(sessionStorage.getItem('studentEmail'));
 
     // Listen for auth token updates (happens when user logs in)
     const handleAuthTokenUpdated = () => {
@@ -41,6 +43,7 @@ function Header() {
     const handleStorageChange = () => {
       const newEmail = extractEmailFromToken();
       setUserEmail(newEmail);
+      setSessionStudentEmail(sessionStorage.getItem('studentEmail'));
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -52,12 +55,18 @@ function Header() {
   }, []);
 
   const handleLogout = () => {
+    const hasFacultyToken = !!localStorage.getItem('token');
     authAPI.logout();
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('studentEmail');
+    sessionStorage.removeItem('studentRollNumber');
     setUserEmail(null); // Clear the UI immediately
-    navigate('/faculty/login');
+    setSessionStudentEmail(null);
+    navigate(hasFacultyToken ? '/faculty/login' : '/student/login');
   };
+
+  const menuEmail = userEmail || sessionStudentEmail;
 
   return (
     <header className="psg-header">
@@ -72,13 +81,13 @@ function Header() {
           </div>
           
           {/* User Menu */}
-          {isAuthenticated() && userEmail && (
+          {(isAuthenticated() || !!sessionStudentEmail) && menuEmail && (
             <div className="user-menu">
               <button 
                 className="user-button"
                 onClick={() => setShowDropdown(!showDropdown)}
               >
-                <span className="user-email">{userEmail}</span>
+                <span className="user-email">{menuEmail}</span>
                 <span className="dropdown-arrow">▼</span>
               </button>
               

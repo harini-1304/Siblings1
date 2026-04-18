@@ -12,6 +12,7 @@ function FacultyDashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   
   // State for search and filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +46,13 @@ function FacultyDashboard() {
     'CSE', 'ECE', 'EEE', 'ICE', 'MECH', 'CIVIL', 'AIDS', 'CSBS' , 'VLSI'
   ]);
 
+  const getTotalProfessionalContacts = (student: Student) => {
+    return (student.relativesInIT?.length || 0) +
+      (student.siblings?.length || 0) +
+      (student.parents?.father?.occupationType === 'employed' && student.parents?.father?.status === 'alive' ? 1 : 0) +
+      (student.parents?.mother?.occupationType === 'employed' && student.parents?.mother?.status === 'alive' ? 1 : 0);
+  };
+
   // Check authentication on component mount
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -58,19 +66,68 @@ function FacultyDashboard() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
+      setLoadError('');
       
       // Call backend API to get all students
       const response = await studentAPI.getAll();
+
+      const normalizeStudent = (raw: any): Student => {
+        const basicInfo = raw?.basic_info || {};
+        const parentDetails = raw?.parent_details || {};
+        const siblingsList = Array.isArray(raw?.siblings)
+          ? raw.siblings
+          : (raw?.siblings?.siblings_list || []);
+        const relativesList = Array.isArray(raw?.relatives)
+          ? raw.relatives
+          : (raw?.relatives_in_it?.relatives_list || []);
+
+        return {
+          id: raw?._id || raw?.id || '',
+          studentName: basicInfo.student_name || raw?.studentName || '',
+          mobileNo: basicInfo.mobile_no || raw?.mobileNo || '',
+          parentMobile: basicInfo.parent_mobile || raw?.parentMobile || '',
+          personalMail: basicInfo.personal_mail || raw?.personalMail || '',
+          collegeMail: basicInfo.college_mail || raw?.collegeMail || '',
+          branch: basicInfo.branch || raw?.branch || '',
+          section: basicInfo.section || raw?.section || '',
+          year: basicInfo.year || raw?.year || '',
+          rollNumber: basicInfo.roll_number || raw?.rollNumber || '',
+          parents: {
+            mother: parentDetails.mother || {
+              status: 'nil',
+              name: '',
+              contactNumber: '',
+              education: '',
+              occupationType: '',
+            },
+            father: parentDetails.father || {
+              status: 'nil',
+              name: '',
+              contactNumber: '',
+              education: '',
+              occupationType: '',
+            },
+            guardian: parentDetails.guardian || undefined,
+          },
+          hasSiblingsInIT: siblingsList.length > 0,
+          siblings: siblingsList,
+          hasRelativesInIT: relativesList.length > 0,
+          relativesInIT: relativesList,
+          createdAt: raw?.created_at ? new Date(raw.created_at) : new Date(),
+          updatedAt: raw?.updated_at ? new Date(raw.updated_at) : new Date(),
+        };
+      };
       
       // Map response data to Student objects
       // Backend returns: { students: [...], page, pages, total, limit }
-      const studentsData: Student[] = response.students || [];
+      const studentsData: Student[] = (response.students || []).map((student: any) => normalizeStudent(student));
       
       setStudents(studentsData);
       setFilteredStudents(studentsData);
       
     } catch (error) {
       console.error('Error fetching students:', error);
+      setLoadError('Unable to load student records. Make sure the backend is restarted after the CORS change, then refresh the page and log in again.');
     } finally {
       setLoading(false);
     }
@@ -577,7 +634,7 @@ function FacultyDashboard() {
           </div>
           <div className="stat-card">
             <div className="stat-value">
-              {students.reduce((acc, s) => acc + (s.relativesInIT?.length || 0) + (s.siblings?.length || 0), 0)}
+              {students.reduce((acc, student) => acc + getTotalProfessionalContacts(student), 0)}
             </div>
             <div className="stat-label">Total Professional Contacts</div>
           </div>
@@ -586,6 +643,12 @@ function FacultyDashboard() {
             <div className="stat-label">Filtered Results</div>
           </div>
         </div>
+
+        {loadError && (
+          <div className="dashboard-error-banner">
+            {loadError}
+          </div>
+        )}
 
         {/* Filters Section */}
         <div className="filters-section">
@@ -846,9 +909,7 @@ function FacultyDashboard() {
                         <td className="td-center">
                           {student.hasRelativesInIT || student.hasSiblingsInIT || (student.parents && ((student.parents.father && student.parents.father.occupationType === 'employed' && student.parents.father.status === 'alive') || (student.parents.mother && student.parents.mother.occupationType === 'employed' && student.parents.mother.status === 'alive'))) ? (
                             <span className="badge badge-success">
-                              {(student.relativesInIT?.length || 0) + (student.siblings?.length || 0) + 
-                                (student.parents?.father?.occupationType === 'employed' && student.parents?.father?.status === 'alive' ? 1 : 0) +
-                                (student.parents?.mother?.occupationType === 'employed' && student.parents?.mother?.status === 'alive' ? 1 : 0)} Contact(s)
+                              {getTotalProfessionalContacts(student)} Contact(s)
                             </span>
                           ) : (
                             <span className="badge badge-gray">None</span>
@@ -1376,7 +1437,7 @@ function FacultyDashboard() {
               {/* Professional Contacts - Including Employed Parents in Count */}
               {(selectedStudent.hasRelativesInIT || (selectedStudent.parents && ((selectedStudent.parents.father && selectedStudent.parents.father.occupationType === 'employed' && selectedStudent.parents.father.status === 'alive') || (selectedStudent.parents.mother && selectedStudent.parents.mother.occupationType === 'employed' && selectedStudent.parents.mother.status === 'alive')))) && (
                 <section className="detail-section">
-                  <h3>Professional Contacts (Engineering/Related Fields)</h3>
+                  <h3>Professional Contacts</h3>
                   {selectedStudent.relativesInIT && selectedStudent.relativesInIT.map((relative, index) => (
                     <div key={index} className="card-detail">
                       <h4 style={{ marginBottom: '12px', color: '#2c3e50' }}>Contact {index + 1}</h4>
@@ -1390,11 +1451,19 @@ function FacultyDashboard() {
                           <span className="detail-value">{relative.gender || 'N/A'}</span>
                         </div>
                         <div className="detail-item">
+                          <span className="detail-label">Contact Number:</span>
+                          <span className="detail-value">{relative.contactNumber || relative.whatsappNumber || 'N/A'}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Email:</span>
+                          <span className="detail-value">{relative.email || relative.personalEmail || 'N/A'}</span>
+                        </div>
+                        <div className="detail-item">
                           <span className="detail-label">Relationship:</span>
                           <span className="detail-value">{relative.relationship}</span>
                         </div>
                         <div className="detail-item">
-                          <span className="detail-label">WhatsApp Number:</span>
+                          <span className="detail-label">Whatsapp Number:</span>
                           <span className="detail-value">{relative.whatsappNumber || 'N/A'}</span>
                         </div>
                         <div className="detail-item">
@@ -1402,7 +1471,7 @@ function FacultyDashboard() {
                           <span className="detail-value">{relative.personalEmail || 'N/A'}</span>
                         </div>
                         <div className="detail-item">
-                          <span className="detail-label">Highest Qualification:</span>
+                          <span className="detail-label">Education:</span>
                           <span className="detail-value">{relative.education}</span>
                         </div>
                         <div className="detail-item">
@@ -1422,19 +1491,23 @@ function FacultyDashboard() {
                               <span className="detail-value">{relative.employmentType || 'N/A'}</span>
                             </div>
                             <div className="detail-item">
-                              <span className="detail-label">Organization/Company:</span>
-                              <span className="detail-value">{relative.organizationName || 'N/A'}</span>
+                              <span className="detail-label">Company:</span>
+                              <span className="detail-value">{relative.company || relative.organizationName || 'N/A'}</span>
                             </div>
                             <div className="detail-item">
-                              <span className="detail-label">Sector/Industry:</span>
+                              <span className="detail-label">Sector:</span>
                               <span className="detail-value">{relative.sector || 'N/A'}</span>
                             </div>
                             <div className="detail-item">
-                              <span className="detail-label">Job Title / Designation:</span>
+                              <span className="detail-label">Designation:</span>
                               <span className="detail-value">{relative.designation || 'N/A'}</span>
                             </div>
                             <div className="detail-item">
-                              <span className="detail-label">Years of Experience:</span>
+                              <span className="detail-label">Work City:</span>
+                              <span className="detail-value">{relative.workCity || (relative as any).city || 'N/A'}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Years Of Experience:</span>
                               <span className="detail-value">{relative.yearsOfExperience || 0}</span>
                             </div>
                             <div className="detail-item">
@@ -1446,7 +1519,7 @@ function FacultyDashboard() {
                               <span className="detail-value">{relative.officeContactNumber || 'N/A'}</span>
                             </div>
                             <div className="detail-item">
-                              <span className="detail-label">Official Email:</span>
+                              <span className="detail-label">Office Email:</span>
                               <span className="detail-value">{relative.officeEmail || 'N/A'}</span>
                             </div>
                           </>

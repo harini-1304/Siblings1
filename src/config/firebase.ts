@@ -11,7 +11,3 @@ export const API_BASE_URL = 'http://localhost:5000/api';
 // Components should use the api service instead
 export const auth = {};
 export const db = {};
-
-// Get Firestore database
-// This is where we'll store student and faculty data
-export const db = getFirestore(app);

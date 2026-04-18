@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
   requiredRole?: 'faculty' | 'student';
 }
 
-export function ProtectedRoute({ children, requiredRole = 'faculty' }: ProtectedRouteProps) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const navigate = useNavigate();
 

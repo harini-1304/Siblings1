@@ -20,7 +20,6 @@ function FacultyLogin() {
   const [resetError, setResetError] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetStep, setResetStep] = useState('email'); // 'email' or 'otp'
-  const [resetToken, setResetToken] = useState(''); // Token from OTP verification
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,9 +116,6 @@ function FacultyLogin() {
       setResetLoading(true);
       const response = await authAPI.verifyOTP(email, resetOTP);
       
-      // Store the reset token
-      setResetToken(response.resetToken);
-      
       setResetMessage('✅ OTP verified! Redirecting to password reset page...');
       
       // Redirect to reset password page with token
@@ -143,7 +139,6 @@ function FacultyLogin() {
     setResetOTP('');
     setResetMessage('');
     setResetError('');
-    setResetToken('');
   };
 
   return (

@@ -137,6 +137,36 @@ export const studentAPI = {
     return response.data;
   },
 
+  // Request student password reset OTP
+  requestPasswordReset: async (email: string, rollNumber: string) => {
+    const response = await apiClient.post('/auth/student/forgot-password', {
+      email,
+      rollNumber,
+    });
+    return response.data;
+  },
+
+  // Verify student password reset OTP
+  verifyPasswordResetOTP: async (email: string, rollNumber: string, otp: string) => {
+    const response = await apiClient.post('/auth/student/verify-otp', {
+      email,
+      rollNumber,
+      otp,
+    });
+    return response.data;
+  },
+
+  // Get student's own submission by roll number and email
+  getSelf: async (rollNumber: string, email: string) => {
+    const response = await apiClient.get('/students/self', {
+      params: {
+        roll_number: rollNumber,
+        email,
+      },
+    });
+    return response.data;
+  },
+
   // Get all students (faculty only)
   getAll: async () => {
     const response = await apiClient.get('/students');
