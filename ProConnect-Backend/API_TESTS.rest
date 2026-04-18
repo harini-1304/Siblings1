@@ -1,0 +1,167 @@
+### ProConnect Backend API Testing
+### Use with VS Code REST Client extension or import to Postman
+
+@baseUrl = http://localhost:5000
+@facultyToken = 
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+### Health Check
+GET {{baseUrl}}/api/health
+
+# ============================================================
+# AUTHENTICATION ROUTES
+# ============================================================
+
+### Faculty Signup
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test.faculty@psgitech.ac.in",
+  "password": "Test@1234",
+  "employee_id": "EMP12345",
+  "name": "Test Faculty"
+}
+
+### Faculty Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test.faculty@psgitech.ac.in",
+  "password": "Test@1234"
+}
+
+### Verify Token
+POST {{baseUrl}}/api/auth/verify-token
+Content-Type: application/json
+
+{
+  "token": "{{facultyToken}}"
+}
+
+### Refresh Token
+POST {{baseUrl}}/api/auth/refresh-token
+Content-Type: application/json
+
+{
+  "token": "{{facultyToken}}"
+}
+
+# ============================================================
+# STUDENT ROUTES
+# ============================================================
+
+### Submit Student Form
+POST {{baseUrl}}/api/students/submit
+Content-Type: application/json
+
+{
+  "basic_info": {
+    "student_name": "John Doe",
+    "roll_number": "19BCE001",
+    "mobile_no": "9876543210",
+    "parent_mobile": "9876543211",
+    "personal_mail": "john@email.com",
+    "college_mail": "john@psgtech.ac.in",
+    "branch": "CSE",
+    "section": "A",
+    "year": "4"
+  },
+  "parent_details": {
+    "mother": {
+      "name": "Mother Name",
+      "status": "alive",
+      "education": "Bachelor's"
+    },
+    "father": {
+      "name": "Father Name",
+      "status": "alive",
+      "education": "Master's"
+    }
+  },
+  "siblings": [
+    {
+      "name": "Sibling Name",
+      "college": "College Name",
+      "course": "BTech",
+      "branch": "CSE"
+    }
+  ],
+  "relatives": [
+    {
+      "name": "Relative Name",
+      "company": "Tech Company",
+      "designation": "Software Engineer"
+    }
+  ]
+}
+
+### Get All Students (Faculty Only)
+GET {{baseUrl}}/api/students?branch=CSE&section=A&page=1&limit=10
+Authorization: Bearer {{facultyToken}}
+
+### Get Single Student (Faculty Only)
+GET {{baseUrl}}/api/students/STUDENT_ID_HERE
+Authorization: Bearer {{facultyToken}}
+
+### Update Student (Faculty Only)
+PUT {{baseUrl}}/api/students/STUDENT_ID_HERE
+Authorization: Bearer {{facultyToken}}
+Content-Type: application/json
+
+{
+  "basic_info": {
+    "student_name": "Updated Name",
+    "roll_number": "19BCE001",
+    "mobile_no": "9876543210",
+    "parent_mobile": "9876543211",
+    "personal_mail": "john@email.com",
+    "college_mail": "john@psgtech.ac.in",
+    "branch": "CSE",
+    "section": "A",
+    "year": "4"
+  }
+}
+
+### Delete Student (Faculty Only)
+DELETE {{baseUrl}}/api/students/STUDENT_ID_HERE
+Authorization: Bearer {{facultyToken}}
+
+# ============================================================
+# FACULTY ROUTES
+# ============================================================
+
+### Get Faculty Profile
+GET {{baseUrl}}/api/faculty/profile
+Authorization: Bearer {{facultyToken}}
+
+### Change Password
+POST {{baseUrl}}/api/faculty/change-password
+Authorization: Bearer {{facultyToken}}
+Content-Type: application/json
+
+{
+  "current_password": "Test@1234",
+  "new_password": "NewPassword@1234"
+}
+
+### Get Statistics
+GET {{baseUrl}}/api/faculty/stats
+Authorization: Bearer {{facultyToken}}
+
+# ============================================================
+# NOTES
+# ============================================================
+# 
+# 1. Replace {{facultyToken}} with actual JWT token from login response
+# 2. Replace STUDENT_ID_HERE with actual MongoDB ObjectId
+# 3. For local testing, use http://localhost:5000
+# 4. For production, replace with your deployment URL
+# 
+# Example Token from Login Response:
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTBmMTkxNzNkMzMzZjU3ZWU2MGIzODI5IiwiZW1haWwiOiJ0ZXN0QHBzZ2l0ZWNoLmFjLmluIiwicm9sZSI6ImZhY3VsdHkifQ...
+#
