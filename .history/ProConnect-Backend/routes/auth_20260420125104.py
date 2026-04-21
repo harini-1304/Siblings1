@@ -55,8 +55,8 @@ def signup():
         collections = get_collections()
         faculties = collections['faculties']
         
-        # Check if email already exists (case-insensitive)
-        existing_user = faculties.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Check if email already exists
+        existing_user = faculties.find_one({'email': email})
         if existing_user:
             return jsonify({'error': 'Email already registered'}), 409
         
@@ -127,8 +127,8 @@ def login():
         collections = get_collections()
         faculties = collections['faculties']
         
-        # Find faculty by email (case-insensitive)
-        faculty_doc = faculties.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Find faculty by email
+        faculty_doc = faculties.find_one({'email': email})
         if not faculty_doc:
             return jsonify({'error': 'Faculty account not found. Please sign up first.'}), 404
         
@@ -143,7 +143,7 @@ def login():
         # Generate JWT token
         token = generate_token(
             user_id=faculty_doc['_id'],
-            email=email,  # Use normalized email from request, not database
+            email=faculty_doc['email'],
             role=faculty_doc.get('role', 'faculty')
         )
         
@@ -156,7 +156,7 @@ def login():
         # Generate refresh token (longer expiration)
         refresh_payload = {
             'user_id': str(faculty_doc['_id']),
-            'email': email,  # Use normalized email from request, not database
+            'email': faculty_doc['email'],
             'role': faculty_doc.get('role', 'faculty'),
             'type': 'refresh',  # Mark as refresh token
             'exp': datetime.utcnow() + timedelta(days=7),  # 7 days
@@ -169,7 +169,7 @@ def login():
             'refreshToken': refresh_token_str,
             'user': {
                 'id': str(faculty_doc['_id']),
-                'email': email,  # Use normalized email from request, not database
+                'email': faculty_doc['email'],
                 'name': faculty_doc.get('name', ''),
                 'employee_id': faculty_doc.get('employee_id', ''),
                 'role': faculty_doc.get('role', 'faculty')
@@ -326,8 +326,8 @@ def forgot_password():
         collections = get_collections()
         faculties_collection = collections['faculties']
         
-        # Check if user exists (case-insensitive)
-        user = faculties_collection.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Check if user exists
+        user = faculties_collection.find_one({'email': email})
         
         if not user:
             return jsonify({
@@ -519,8 +519,8 @@ def verify_otp():
         collections = get_collections()
         faculties_collection = collections['faculties']
         
-        # Find user by email (case-insensitive)
-        user = faculties_collection.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Find user by email
+        user = faculties_collection.find_one({'email': email})
         
         if not user:
             return jsonify({'error': 'Faculty account not found. Please sign up first.'}), 404

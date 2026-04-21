@@ -39,7 +39,7 @@ def signup():
         if not all(field in data for field in required_fields):
             return jsonify({'error': 'Missing required fields'}), 400
         
-        email = data.get('email').strip().lower()  # Normalize to lowercase
+        email = data.get('email').strip()
         password = data.get('password')
         employee_id = data.get('employee_id').strip()
         name = data.get('name', '').strip()
@@ -55,8 +55,8 @@ def signup():
         collections = get_collections()
         faculties = collections['faculties']
         
-        # Check if email already exists (case-insensitive)
-        existing_user = faculties.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Check if email already exists
+        existing_user = faculties.find_one({'email': email})
         if existing_user:
             return jsonify({'error': 'Email already registered'}), 409
         
@@ -117,7 +117,7 @@ def login():
         if not data.get('email') or not data.get('password'):
             return jsonify({'error': 'Email and password are required'}), 400
         
-        email = data.get('email').strip().lower()  # Normalize to lowercase
+        email = data.get('email').strip()
         password = data.get('password')
         
         # Validate email format
@@ -127,8 +127,8 @@ def login():
         collections = get_collections()
         faculties = collections['faculties']
         
-        # Find faculty by email (case-insensitive)
-        faculty_doc = faculties.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Find faculty by email
+        faculty_doc = faculties.find_one({'email': email})
         if not faculty_doc:
             return jsonify({'error': 'Faculty account not found. Please sign up first.'}), 404
         
@@ -143,7 +143,7 @@ def login():
         # Generate JWT token
         token = generate_token(
             user_id=faculty_doc['_id'],
-            email=email,  # Use normalized email from request, not database
+            email=faculty_doc['email'],
             role=faculty_doc.get('role', 'faculty')
         )
         
@@ -156,7 +156,7 @@ def login():
         # Generate refresh token (longer expiration)
         refresh_payload = {
             'user_id': str(faculty_doc['_id']),
-            'email': email,  # Use normalized email from request, not database
+            'email': faculty_doc['email'],
             'role': faculty_doc.get('role', 'faculty'),
             'type': 'refresh',  # Mark as refresh token
             'exp': datetime.utcnow() + timedelta(days=7),  # 7 days
@@ -169,7 +169,7 @@ def login():
             'refreshToken': refresh_token_str,
             'user': {
                 'id': str(faculty_doc['_id']),
-                'email': email,  # Use normalized email from request, not database
+                'email': faculty_doc['email'],
                 'name': faculty_doc.get('name', ''),
                 'employee_id': faculty_doc.get('employee_id', ''),
                 'role': faculty_doc.get('role', 'faculty')
@@ -318,7 +318,7 @@ def forgot_password():
     """
     try:
         data = request.get_json()
-        email = data.get('email', '').strip().lower()  # Normalize to lowercase
+        email = data.get('email', '').strip()
         
         if not email:
             return jsonify({'error': 'Email is required'}), 400
@@ -326,8 +326,8 @@ def forgot_password():
         collections = get_collections()
         faculties_collection = collections['faculties']
         
-        # Check if user exists (case-insensitive)
-        user = faculties_collection.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Check if user exists
+        user = faculties_collection.find_one({'email': email})
         
         if not user:
             return jsonify({
@@ -413,10 +413,11 @@ def student_forgot_password():
             print(f"📧 Sending student OTP to {email}...")
             _send_reset_otp_email(email, recipient_name, otp, 'ProConnect - Student Password Reset OTP')
             print(f"✅ Student OTP sent to {email}")
-            return jsonify({'message': 'OTP sent successfully to your email.'}), 200
         except Exception as email_error:
             print(f"⚠️ Failed to send student email: {str(email_error)}")
-            return jsonify({'error': f'Unable to send reset email: {str(email_error)}'}), 500
+            return jsonify({'error': 'Unable to send reset email right now. Please try again later.'}), 500
+
+        return jsonify({'message': 'If the email exists, an OTP will be sent shortly.'}), 200
 
     except Exception as e:
         print(f"❌ Error in student_forgot_password: {str(e)}")
@@ -447,23 +448,23 @@ def student_verify_otp():
         })
 
         if not student:
-            return jsonify({'error': 'Student account not found. Email or roll number does not match any records.'}), 404
+            return jsonify({'error': 'Invalid email, roll number or OTP'}), 401
 
         stored_otp = student.get('student_reset_otp')
         otp_expiry = student.get('student_otp_expiry')
 
         if not stored_otp or not otp_expiry:
-            return jsonify({'error': 'No OTP found. Please request a new password reset.'}), 400
+            return jsonify({'error': 'No OTP found. Please request a new one'}), 401
 
         if datetime.utcnow() > otp_expiry:
             students_collection.update_one(
                 {'_id': student['_id']},
                 {'$unset': {'student_reset_otp': 1, 'student_otp_expiry': 1}}
             )
-            return jsonify({'error': 'OTP has expired. Please request a new password reset.'}), 401
+            return jsonify({'error': 'OTP has expired. Please request a new one'}), 401
 
         if stored_otp != otp:
-            return jsonify({'error': 'Incorrect OTP. Please try again.'}), 401
+            return jsonify({'error': 'Invalid email, roll number or OTP'}), 401
 
         reset_payload = {
             'student_id': str(student['_id']),
@@ -510,7 +511,7 @@ def verify_otp():
     """
     try:
         data = request.get_json()
-        email = data.get('email', '').strip().lower()  # Normalize to lowercase
+        email = data.get('email', '').strip()
         otp = data.get('otp', '').strip()
         
         if not email or not otp:
@@ -519,8 +520,8 @@ def verify_otp():
         collections = get_collections()
         faculties_collection = collections['faculties']
         
-        # Find user by email (case-insensitive)
-        user = faculties_collection.find_one({'email': {'$regex': f'^{email}$', '$options': 'i'}})
+        # Find user by email
+        user = faculties_collection.find_one({'email': email})
         
         if not user:
             return jsonify({'error': 'Faculty account not found. Please sign up first.'}), 404

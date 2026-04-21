@@ -120,9 +120,7 @@ function StudentForm() {
       return;
     }
 
-    // Normalize email to lowercase for consistency
-    const normalizedEmail = studentEmail.toLowerCase().trim();
-    loadExistingStudentData(studentRollNumber, normalizedEmail).finally(() => {
+    loadExistingStudentData(studentRollNumber, studentEmail).finally(() => {
       setIsLoadingExisting(false);
     });
   }, [navigate]);

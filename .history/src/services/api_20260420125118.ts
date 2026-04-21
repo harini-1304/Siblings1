@@ -140,7 +140,7 @@ export const studentAPI = {
   // Request student password reset OTP
   requestPasswordReset: async (email: string, rollNumber: string) => {
     const response = await apiClient.post('/auth/student/forgot-password', {
-      email: email.toLowerCase().trim(),  // Normalize to lowercase
+      email,
       rollNumber,
     });
     return response.data;
@@ -149,7 +149,7 @@ export const studentAPI = {
   // Verify student password reset OTP
   verifyPasswordResetOTP: async (email: string, rollNumber: string, otp: string) => {
     const response = await apiClient.post('/auth/student/verify-otp', {
-      email: email.toLowerCase().trim(),  // Normalize to lowercase
+      email,
       rollNumber,
       otp,
     });
@@ -161,7 +161,7 @@ export const studentAPI = {
     const response = await apiClient.get('/students/self', {
       params: {
         roll_number: rollNumber,
-        email: email.toLowerCase().trim(),  // Normalize to lowercase
+        email,
       },
     });
     return response.data;

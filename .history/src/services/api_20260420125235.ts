@@ -161,7 +161,7 @@ export const studentAPI = {
     const response = await apiClient.get('/students/self', {
       params: {
         roll_number: rollNumber,
-        email: email.toLowerCase().trim(),  // Normalize to lowercase
+        email,
       },
     });
     return response.data;

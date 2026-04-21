@@ -143,7 +143,7 @@ def login():
         # Generate JWT token
         token = generate_token(
             user_id=faculty_doc['_id'],
-            email=email,  # Use normalized email from request, not database
+            email=faculty_doc['email'],
             role=faculty_doc.get('role', 'faculty')
         )
         
@@ -156,7 +156,7 @@ def login():
         # Generate refresh token (longer expiration)
         refresh_payload = {
             'user_id': str(faculty_doc['_id']),
-            'email': email,  # Use normalized email from request, not database
+            'email': faculty_doc['email'],
             'role': faculty_doc.get('role', 'faculty'),
             'type': 'refresh',  # Mark as refresh token
             'exp': datetime.utcnow() + timedelta(days=7),  # 7 days
@@ -169,7 +169,7 @@ def login():
             'refreshToken': refresh_token_str,
             'user': {
                 'id': str(faculty_doc['_id']),
-                'email': email,  # Use normalized email from request, not database
+                'email': faculty_doc['email'],
                 'name': faculty_doc.get('name', ''),
                 'employee_id': faculty_doc.get('employee_id', ''),
                 'role': faculty_doc.get('role', 'faculty')

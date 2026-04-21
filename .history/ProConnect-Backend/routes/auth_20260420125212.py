@@ -169,7 +169,7 @@ def login():
             'refreshToken': refresh_token_str,
             'user': {
                 'id': str(faculty_doc['_id']),
-                'email': email,  # Use normalized email from request, not database
+                'email': faculty_doc['email'],
                 'name': faculty_doc.get('name', ''),
                 'employee_id': faculty_doc.get('employee_id', ''),
                 'role': faculty_doc.get('role', 'faculty')
