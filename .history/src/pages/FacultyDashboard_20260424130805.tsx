@@ -776,12 +776,12 @@ function FacultyDashboard() {
                   const value = e.target.value;
                   setDesignationInput(value);
                   setFilterDesignation(value);
-                  if (value) setShowDesignationDropdown(true);
                 }}
-                onFocus={() => designationInput && setShowDesignationDropdown(true)}
+                onFocus={() => setShowDesignationDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDesignationDropdown(false), 200)}
               />
               {showDesignationDropdown && filteredDesignations.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowDesignationDropdown(false)}>
+                <div className="autocomplete-dropdown">
                   {filteredDesignations.map((designation, index) => (
                     <div
                       key={index}
@@ -811,12 +811,12 @@ function FacultyDashboard() {
                   const value = e.target.value;
                   setCompanyInput(value);
                   setFilterCompany(value);
-                  if (value) setShowCompanyDropdown(true);
                 }}
-                onFocus={() => companyInput && setShowCompanyDropdown(true)}
+                onFocus={() => setShowCompanyDropdown(true)}
+                onBlur={() => setTimeout(() => setShowCompanyDropdown(false), 200)}
               />
               {showCompanyDropdown && filteredCompanies.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCompanyDropdown(false)}>
+                <div className="autocomplete-dropdown">
                   {filteredCompanies.map((company, index) => (
                     <div
                       key={index}
@@ -846,12 +846,12 @@ function FacultyDashboard() {
                   const value = e.target.value;
                   setCityInput(value);
                   setFilterCity(value);
-                  if (value) setShowCityDropdown(true);
                 }}
-                onFocus={() => cityInput && setShowCityDropdown(true)}
+                onFocus={() => setShowCityDropdown(true)}
+                onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
               />
               {showCityDropdown && filteredCities.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCityDropdown(false)}>
+                <div className="autocomplete-dropdown">
                   {filteredCities.map((city, index) => (
                     <div
                       key={index}

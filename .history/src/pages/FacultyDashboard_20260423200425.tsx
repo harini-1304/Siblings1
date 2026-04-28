@@ -28,12 +28,10 @@ function FacultyDashboard() {
   const [sectionInput, setSectionInput] = useState('');
   const [cityInput, setCityInput] = useState('');
   const [designationInput, setDesignationInput] = useState('');
-  const [companyInput, setCompanyInput] = useState('');
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showSectionDropdown, setShowSectionDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
-  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -213,52 +211,12 @@ function FacultyDashboard() {
       // From Siblings in Engineering/Professional Field
       if (student.hasSiblingsInIT && student.siblings && student.siblings.length > 0) {
         student.siblings.forEach(sibling => {
-          // Check both city and workCity fields
           if (sibling.city) {
             const normalizedCity = sibling.city.toLowerCase().trim();
             const correctedCity = cityMap[normalizedCity] || sibling.city;
             citySet.add(correctedCity);
           }
-          if (sibling.workCity) {
-            const normalizedCity = sibling.workCity.toLowerCase().trim();
-            const correctedCity = cityMap[normalizedCity] || sibling.workCity;
-            citySet.add(correctedCity);
-          }
         });
-      }
-      
-      // From Parents' work city and office address
-      if (student.parents) {
-        if (student.parents.father?.workCity) {
-          const normalizedCity = student.parents.father.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.father.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.father?.officeAddress) {
-          const normalizedCity = student.parents.father.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.father.officeAddress;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.mother?.workCity) {
-          const normalizedCity = student.parents.mother.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.mother.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.mother?.officeAddress) {
-          const normalizedCity = student.parents.mother.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.mother.officeAddress;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.guardian?.workCity) {
-          const normalizedCity = student.parents.guardian.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.guardian.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.guardian?.officeAddress) {
-          const normalizedCity = student.parents.guardian.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.guardian.officeAddress;
-          citySet.add(correctedCity);
-        }
       }
     });
     return Array.from(citySet).sort();
@@ -342,93 +300,6 @@ function FacultyDashboard() {
     return matches.slice(0, 10);
   }, [designationInput, availableDesignations]);
   
-  // Get unique companies from actual student data (both relatives and siblings)
-  const availableCompanies = useMemo(() => {
-    const companySet = new Set<string>();
-    
-    students.forEach(student => {
-      // From Professional Contacts (relativesInIT)
-      if (student.relativesInIT && student.relativesInIT.length > 0) {
-        student.relativesInIT.forEach(relative => {
-          if (relative.company) {
-            const normalized = relative.company.trim();
-            companySet.add(normalized);
-          }
-          if (relative.organizationName) {
-            const normalized = relative.organizationName.trim();
-            companySet.add(normalized);
-          }
-          if (relative.businessName) {
-            const normalized = relative.businessName.trim();
-            companySet.add(normalized);
-          }
-        });
-      }
-      
-      // From Siblings in Engineering/Professional Field
-      if (student.hasSiblingsInIT && student.siblings && student.siblings.length > 0) {
-        student.siblings.forEach(sibling => {
-          if (sibling.company) {
-            const normalized = sibling.company.trim();
-            companySet.add(normalized);
-          }
-          if (sibling.organizationName) {
-            const normalized = sibling.organizationName.trim();
-            companySet.add(normalized);
-          }
-          if (sibling.businessName) {
-            const normalized = sibling.businessName.trim();
-            companySet.add(normalized);
-          }
-        });
-      }
-      
-      // From Parents
-      if (student.parents) {
-        if (student.parents.father?.organizationName) {
-          companySet.add(student.parents.father.organizationName.trim());
-        }
-        if (student.parents.father?.businessName) {
-          companySet.add(student.parents.father.businessName.trim());
-        }
-        if (student.parents.mother?.organizationName) {
-          companySet.add(student.parents.mother.organizationName.trim());
-        }
-        if (student.parents.mother?.businessName) {
-          companySet.add(student.parents.mother.businessName.trim());
-        }
-        if (student.parents.guardian?.organizationName) {
-          companySet.add(student.parents.guardian.organizationName.trim());
-        }
-        if (student.parents.guardian?.businessName) {
-          companySet.add(student.parents.guardian.businessName.trim());
-        }
-      }
-    });
-    return Array.from(companySet).sort();
-  }, [students]);
-  
-  const filteredCompanies = useMemo(() => {
-    if (!companyInput) return availableCompanies;
-    const searchValue = companyInput.toLowerCase();
-    const matches = availableCompanies.filter(company => 
-      company.toLowerCase().includes(searchValue)
-    );
-    
-    // If no exact match found, add the custom input as an option
-    if (matches.length === 0 && companyInput.trim()) {
-      return [companyInput.trim()];
-    }
-    
-    // If input doesn't exactly match any option, add it as first option
-    const exactMatch = availableCompanies.find(c => c.toLowerCase() === searchValue);
-    if (!exactMatch && companyInput.trim()) {
-      return [companyInput.trim(), ...matches.slice(0, 9)];
-    }
-    
-    return matches.slice(0, 10);
-  }, [companyInput, availableCompanies]);
-  
   // Pagination logic
   const paginatedStudents = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -477,70 +348,96 @@ function FacultyDashboard() {
       );
     }
 
-    // Professional Contact Filters with AND logic
-    // If any professional contact filter is applied, find students with contacts matching ALL applied filters
-    const hasProfessionalContactFilters = filterCity || filterDesignation || filterCompany;
-    
-    if (hasProfessionalContactFilters) {
+    // Filter by relative's city (case-insensitive with fuzzy matching - both relatives and siblings)
+    if (filterCity) {
+      const cityQuery = filterCity.toLowerCase().trim();
       filtered = filtered.filter(student => {
-        // Collect all professional contacts (relatives and siblings) and parents who are employed
-        const allContacts: any[] = [];
+        let hasCityMatch = false;
         
-        // Add relatives/professional contacts
+        // Check Professional Contacts (relativesInIT)
         if (student.relativesInIT && student.relativesInIT.length > 0) {
-          allContacts.push(...student.relativesInIT.map(rel => ({
-            ...rel,
-            workCity: rel.workCity,
-            designation: rel.designation,
-            company: rel.company || rel.organizationName || rel.businessName
-          })));
+          hasCityMatch = student.relativesInIT.some(rel => 
+            rel.workCity?.toLowerCase().trim().replace(/\s+/g, ' ').includes(cityQuery) ||
+            cityQuery.includes(rel.workCity?.toLowerCase().trim().replace(/\s+/g, '') || '')
+          );
         }
         
-        // Add siblings in engineering/professional field
-        if (student.siblings && student.siblings.length > 0) {
-          allContacts.push(...student.siblings.map(sibling => ({
-            ...sibling,
-            workCity: sibling.workCity || sibling.city,
-            designation: sibling.designation,
-            company: sibling.company || sibling.organizationName || sibling.businessName
-          })));
+        // Check Siblings in Engineering/Professional Field
+        if (!hasCityMatch && student.hasSiblingsInIT && student.siblings && student.siblings.length > 0) {
+          hasCityMatch = student.siblings.some(sibling => 
+            sibling.city?.toLowerCase().trim().replace(/\s+/g, ' ').includes(cityQuery) ||
+            cityQuery.includes(sibling.city?.toLowerCase().trim().replace(/\s+/g, '') || '')
+          );
         }
         
-        // Add employed father
-        if (student.parents?.father?.occupationType === 'employed' && student.parents?.father?.status === 'alive') {
-          allContacts.push({
-            designation: student.parents.father.designation,
-            company: student.parents.father.organizationName || student.parents.father.businessName,
-            workCity: student.parents.father.workCity || student.parents.father.officeAddress
-          });
-        }
+        return hasCityMatch;
+      });
+    }
+
+    // Filter by designation (case-insensitive - check father, mother, siblings, and professional contacts)
+    if (filterDesignation) {
+      const designationQuery = filterDesignation.toLowerCase().trim();
+      filtered = filtered.filter(student => {
+        // Check Father's designation
+        const hasFatherMatch = student.parents?.father?.designation?.toLowerCase().trim().includes(designationQuery);
         
-        // Add employed mother
-        if (student.parents?.mother?.occupationType === 'employed' && student.parents?.mother?.status === 'alive') {
-          allContacts.push({
-            designation: student.parents.mother.designation,
-            company: student.parents.mother.organizationName || student.parents.mother.businessName,
-            workCity: student.parents.mother.workCity || student.parents.mother.officeAddress
-          });
-        }
+        // Check Mother's designation
+        const hasMotherMatch = student.parents?.mother?.designation?.toLowerCase().trim().includes(designationQuery);
         
-        // Check if at least one contact matches ALL applied filters
-        return allContacts.some(contact => {
-          // Check city filter
-          const cityMatch = !filterCity || 
-            contact.workCity?.toLowerCase().trim().includes(filterCity.toLowerCase().trim());
-          
-          // Check designation filter
-          const designationMatch = !filterDesignation || 
-            contact.designation?.toLowerCase().trim().includes(filterDesignation.toLowerCase().trim());
-          
-          // Check company filter
-          const companyMatch = !filterCompany || 
-            contact.company?.toLowerCase().includes(filterCompany.toLowerCase());
-          
-          // Return true only if ALL applied filters match
-          return cityMatch && designationMatch && companyMatch;
-        });
+        // Check Guardian's designation (if exists)
+        const hasGuardianMatch = student.parents?.guardian?.designation?.toLowerCase().trim().includes(designationQuery);
+        
+        // Check Siblings' designation
+        const hasSiblingMatch = student.siblings?.some(sibling => 
+          sibling.designation?.toLowerCase().trim().includes(designationQuery)
+        );
+        
+        // Check Professional Contacts' designation
+        const hasRelativeMatch = student.relativesInIT?.some(rel => 
+          rel.designation?.toLowerCase().trim().includes(designationQuery)
+        );
+        
+        return hasFatherMatch || hasMotherMatch || hasGuardianMatch || hasSiblingMatch || hasRelativeMatch;
+      });
+    }
+
+    // Filter by company (case-insensitive - check father, mother, siblings, and professional contacts)
+    if (filterCompany) {
+      const companyQuery = filterCompany.toLowerCase();
+      filtered = filtered.filter(student => {
+        // Check Father's organization/business
+        const hasFatherMatch = student.parents?.father && (
+          student.parents.father.organizationName?.toLowerCase().includes(companyQuery) ||
+          student.parents.father.businessName?.toLowerCase().includes(companyQuery)
+        );
+        
+        // Check Mother's organization/business
+        const hasMotherMatch = student.parents?.mother && (
+          student.parents.mother.organizationName?.toLowerCase().includes(companyQuery) ||
+          student.parents.mother.businessName?.toLowerCase().includes(companyQuery)
+        );
+        
+        // Check Guardian's organization/business (if exists)
+        const hasGuardianMatch = student.parents?.guardian && (
+          student.parents.guardian.organizationName?.toLowerCase().includes(companyQuery) ||
+          student.parents.guardian.businessName?.toLowerCase().includes(companyQuery)
+        );
+        
+        // Check Siblings' organization/business/company
+        const hasSiblingMatch = student.siblings?.some(sibling => 
+          sibling.organizationName?.toLowerCase().includes(companyQuery) ||
+          sibling.businessName?.toLowerCase().includes(companyQuery) ||
+          sibling.company?.toLowerCase().includes(companyQuery)
+        );
+        
+        // Check Professional Contacts' organization/business/company
+        const hasRelativeMatch = student.relativesInIT?.some(rel => 
+          rel.organizationName?.toLowerCase().includes(companyQuery) ||
+          rel.businessName?.toLowerCase().includes(companyQuery) ||
+          rel.company?.toLowerCase().includes(companyQuery)
+        );
+        
+        return hasFatherMatch || hasMotherMatch || hasGuardianMatch || hasSiblingMatch || hasRelativeMatch;
       });
     }
 
@@ -560,7 +457,6 @@ function FacultyDashboard() {
     setSectionInput('');
     setCityInput('');
     setDesignationInput('');
-    setCompanyInput('');
     setCurrentPage(1);
   };
 
@@ -762,130 +658,19 @@ function FacultyDashboard() {
           </div>
         )}
 
-        {/* Additional Filters Section */}
-        <div className="additional-filters-section">
-          <div className="filter-row">
-            <div className="filter-group-compact">
-              <label>Designation</label>
-              <input
-                type="text"
-                className="filter-input-compact"
-                placeholder="Search designation..."
-                value={designationInput}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setDesignationInput(value);
-                  setFilterDesignation(value);
-                  if (value) setShowDesignationDropdown(true);
-                }}
-                onFocus={() => designationInput && setShowDesignationDropdown(true)}
-              />
-              {showDesignationDropdown && filteredDesignations.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowDesignationDropdown(false)}>
-                  {filteredDesignations.map((designation, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setDesignationInput(designation);
-                        setFilterDesignation(designation);
-                        setShowDesignationDropdown(false);
-                      }}
-                    >
-                      {designation}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="filter-group-compact">
-              <label>Company</label>
-              <input
-                type="text"
-                className="filter-input-compact"
-                placeholder="Search company..."
-                value={companyInput}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCompanyInput(value);
-                  setFilterCompany(value);
-                  if (value) setShowCompanyDropdown(true);
-                }}
-                onFocus={() => companyInput && setShowCompanyDropdown(true)}
-              />
-              {showCompanyDropdown && filteredCompanies.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCompanyDropdown(false)}>
-                  {filteredCompanies.map((company, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCompanyInput(company);
-                        setFilterCompany(company);
-                        setShowCompanyDropdown(false);
-                      }}
-                    >
-                      {company}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="filter-group-compact">
-              <label>Work City</label>
-              <input
-                type="text"
-                className="filter-input-compact"
-                placeholder="Search city..."
-                value={cityInput}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCityInput(value);
-                  setFilterCity(value);
-                  if (value) setShowCityDropdown(true);
-                }}
-                onFocus={() => cityInput && setShowCityDropdown(true)}
-              />
-              {showCityDropdown && filteredCities.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCityDropdown(false)}>
-                  {filteredCities.map((city, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCityInput(city);
-                        setFilterCity(city);
-                        setShowCityDropdown(false);
-                      }}
-                    >
-                      {city}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Data Table */}
         <div className="table-section">
           {loading ? (
             <div className="loading">Loading student data...</div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="no-data">
+              <p>No students found matching your filters.</p>
+            </div>
           ) : (
             <>
-              {/* Results Summary with Clear Filters - Always Visible */}
+              {/* Results Summary */}
               <div className="results-summary">
-                <span>
-                  {filteredStudents.length === 0 
-                    ? "No students found matching your filters." 
-                    : `Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${Math.min(currentPage * itemsPerPage, filteredStudents.length)} of ${filteredStudents.length} results`
-                  }
-                </span>
+                <span>Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredStudents.length)} of {filteredStudents.length} results</span>
                 <div className="filter-actions-table">
                   <button className="btn btn-secondary" onClick={clearFilters}>
                     Clear Filters
@@ -908,273 +693,268 @@ function FacultyDashboard() {
                 </div>
               </div>
               
-              {/* Table - Only shown if there are results */}
-              {filteredStudents.length > 0 && (
-                <>
-                  <div className="table-container">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>
-                            <div className="th-header">
-                              <span>Student Name</span>
-                              <div className="filter-icon" title="Filter by name">⋮</div>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>
+                        <div className="th-header">
+                          <span>Student Name</span>
+                          <div className="filter-icon" title="Filter by name">⋮</div>
+                        </div>
+                      </th>
+                      <th>
+                        <div className="th-header">
+                          <span>Roll Number</span>
+                          <div className="filter-icon" title="Filter by roll number">⋮</div>
+                        </div>
+                      </th>
+                      <th style={{ position: 'relative' }}>
+                        <div className="th-header">
+                          <span>Branch</span>
+                          <div 
+                            className="filter-icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowColumnFilterBranch(!showColumnFilterBranch);
+                            }}
+                            title="Filter by branch"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            ▼
+                          </div>
+                        </div>
+                        {showColumnFilterBranch && (
+                          <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
+                            <div 
+                              className="filter-option"
+                              onClick={() => {
+                                setFilterBranch('');
+                                setShowColumnFilterBranch(false);
+                              }}
+                            >
+                              All Branches
                             </div>
-                          </th>
-                          <th>
-                            <div className="th-header">
-                              <span>Roll Number</span>
-                              <div className="filter-icon" title="Filter by roll number">⋮</div>
-                            </div>
-                          </th>
-                          <th style={{ position: 'relative' }}>
-                            <div className="th-header">
-                              <span>Branch</span>
-                              <div 
-                                className="filter-icon" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowColumnFilterBranch(!showColumnFilterBranch);
+                            {branches.map(branch => (
+                              <div
+                                key={branch}
+                                className={`filter-option ${filterBranch === branch ? 'active' : ''}`}
+                                onClick={() => {
+                                  setFilterBranch(branch);
+                                  setShowColumnFilterBranch(false);
                                 }}
-                                title="Filter by branch"
-                                style={{ cursor: 'pointer' }}
                               >
-                                ▼
+                                {branch} {filterBranch === branch && '✓'}
                               </div>
+                            ))}
+                          </div>
+                        )}
+                      </th>
+                      <th style={{ position: 'relative' }}>
+                        <div className="th-header">
+                          <span>Section</span>
+                          <div 
+                            className="filter-icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowColumnFilterSection(!showColumnFilterSection);
+                            }}
+                            title="Filter by section"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            ▼
+                          </div>
+                        </div>
+                        {showColumnFilterSection && (
+                          <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
+                            <div 
+                              className="filter-option"
+                              onClick={() => {
+                                setFilterSection('');
+                                setShowColumnFilterSection(false);
+                              }}
+                            >
+                              All Sections
                             </div>
-                            {showColumnFilterBranch && (
-                              <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
-                                <div 
-                                  className="filter-option"
-                                  onClick={() => {
-                                    setFilterBranch('');
-                                    setShowColumnFilterBranch(false);
-                                  }}
-                                >
-                                  All Branches
-                                </div>
-                                {branches.map(branch => (
-                                  <div
-                                    key={branch}
-                                    className={`filter-option ${filterBranch === branch ? 'active' : ''}`}
-                                    onClick={() => {
-                                      setFilterBranch(branch);
-                                      setShowColumnFilterBranch(false);
-                                    }}
-                                  >
-                                    {branch} {filterBranch === branch && '✓'}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </th>
-                          <th style={{ position: 'relative' }}>
-                            <div className="th-header">
-                              <span>Section</span>
-                              <div 
-                                className="filter-icon" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowColumnFilterSection(!showColumnFilterSection);
+                            {availableSections.map(section => (
+                              <div
+                                key={section}
+                                className={`filter-option ${filterSection === section ? 'active' : ''}`}
+                                onClick={() => {
+                                  setFilterSection(section);
+                                  setShowColumnFilterSection(false);
                                 }}
-                                title="Filter by section"
-                                style={{ cursor: 'pointer' }}
                               >
-                                ▼
+                                {section} {filterSection === section && '✓'}
                               </div>
+                            ))}
+                          </div>
+                        )}
+                      </th>
+                      <th>
+                        <div className="th-header">
+                          <span>Year</span>
+                          <div className="filter-icon" title="Filter by year">▼</div>
+                        </div>
+                      </th>
+                      <th>Contact</th>
+                      <th style={{ position: 'relative' }}>
+                        <div className="th-header">
+                          <span>Professional Contacts</span>
+                          <div 
+                            className="filter-icon" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowColumnFilterContacts(!showColumnFilterContacts);
+                            }}
+                            title="Filter by contacts"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            ▼
+                          </div>
+                        </div>
+                        {showColumnFilterContacts && (
+                          <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
+                            <div 
+                              className="filter-option"
+                              onClick={() => {
+                                setFilterHasRelatives('');
+                                setShowColumnFilterContacts(false);
+                              }}
+                            >
+                              All Students
                             </div>
-                            {showColumnFilterSection && (
-                              <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
-                                <div 
-                                  className="filter-option"
-                                  onClick={() => {
-                                    setFilterSection('');
-                                    setShowColumnFilterSection(false);
-                                  }}
-                                >
-                                  All Sections
-                                </div>
-                                {availableSections.map(section => (
-                                  <div
-                                    key={section}
-                                    className={`filter-option ${filterSection === section ? 'active' : ''}`}
-                                    onClick={() => {
-                                      setFilterSection(section);
-                                      setShowColumnFilterSection(false);
-                                    }}
-                                  >
-                                    {section} {filterSection === section && '✓'}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </th>
-                          <th>
-                            <div className="th-header">
-                              <span>Year</span>
-                              <div className="filter-icon" title="Filter by year">▼</div>
+                            <div
+                              className={`filter-option ${filterHasRelatives === 'yes' ? 'active' : ''}`}
+                              onClick={() => {
+                                setFilterHasRelatives('yes');
+                                setShowColumnFilterContacts(false);
+                              }}
+                            >
+                              Has Contacts {filterHasRelatives === 'yes' && '✓'}
                             </div>
-                          </th>
-                          <th>Contact</th>
-                          <th style={{ position: 'relative' }}>
-                            <div className="th-header">
-                              <span>Professional Contacts</span>
-                              <div 
-                                className="filter-icon" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowColumnFilterContacts(!showColumnFilterContacts);
-                                }}
-                                title="Filter by contacts"
-                                style={{ cursor: 'pointer' }}
-                              >
-                                ▼
-                              </div>
+                            <div
+                              className={`filter-option ${filterHasRelatives === 'no' ? 'active' : ''}`}
+                              onClick={() => {
+                                setFilterHasRelatives('no');
+                                setShowColumnFilterContacts(false);
+                              }}
+                            >
+                              No Contacts {filterHasRelatives === 'no' && '✓'}
                             </div>
-                            {showColumnFilterContacts && (
-                              <div className="column-filter-dropdown" onClick={(e) => e.stopPropagation()}>
-                                <div 
-                                  className="filter-option"
-                                  onClick={() => {
-                                    setFilterHasRelatives('');
-                                    setShowColumnFilterContacts(false);
-                                  }}
-                                >
-                                  All Students
-                                </div>
-                                <div
-                                  className={`filter-option ${filterHasRelatives === 'yes' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    setFilterHasRelatives('yes');
-                                    setShowColumnFilterContacts(false);
-                                  }}
-                                >
-                                  Has Contacts {filterHasRelatives === 'yes' && '✓'}
-                                </div>
-                                <div
-                                  className={`filter-option ${filterHasRelatives === 'no' ? 'active' : ''}`}
-                                  onClick={() => {
-                                    setFilterHasRelatives('no');
-                                    setShowColumnFilterContacts(false);
-                                  }}
-                                >
-                                  No Contacts {filterHasRelatives === 'no' && '✓'}
-                                </div>
-                              </div>
-                            )}
-                          </th>
-                          <th>
-                            <div className="th-header">
-                              <span>Actions</span>
-                            </div>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedStudents.map((student) => (
-                          <tr key={student.id}>
-                            <td className="td-name">{student.studentName}</td>
-                            <td>{student.rollNumber}</td>
-                            <td><span className="badge">{student.branch}</span></td>
-                            <td className="td-center">{student.section || '-'}</td>
-                            <td>{student.year}</td>
-                            <td>
-                              <div className="contact-info">
-                                <div>{student.mobileNo}</div>
-                                <div className="email">{student.collegeMail}</div>
-                              </div>
-                            </td>
-                            <td className="td-center">
-                              {student.hasRelativesInIT || student.hasSiblingsInIT || (student.parents && ((student.parents.father && student.parents.father.occupationType === 'employed' && student.parents.father.status === 'alive') || (student.parents.mother && student.parents.mother.occupationType === 'employed' && student.parents.mother.status === 'alive'))) ? (
-                                <span className="badge badge-success">
-                                  {getTotalProfessionalContacts(student)} Contact(s)
-                                </span>
-                              ) : (
-                                <span className="badge badge-gray">None</span>
-                              )}
-                            </td>
-                            <td>
-                              <div className="action-buttons">
-                                <button
-                                  className="btn-view"
-                                  onClick={() => handleViewDetails(student)}
-                                >
-                                  View
-                                </button>
-                                <button
-                                  className="btn-delete"
-                                  onClick={() => handleDeleteStudent(student.id, student.studentName)}
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                          </div>
+                        )}
+                      </th>
+                      <th>
+                        <div className="th-header">
+                          <span>Actions</span>
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedStudents.map((student) => (
+                      <tr key={student.id}>
+                        <td className="td-name">{student.studentName}</td>
+                        <td>{student.rollNumber}</td>
+                        <td><span className="badge">{student.branch}</span></td>
+                        <td className="td-center">{student.section || '-'}</td>
+                        <td>{student.year}</td>
+                        <td>
+                          <div className="contact-info">
+                            <div>{student.mobileNo}</div>
+                            <div className="email">{student.collegeMail}</div>
+                          </div>
+                        </td>
+                        <td className="td-center">
+                          {student.hasRelativesInIT || student.hasSiblingsInIT || (student.parents && ((student.parents.father && student.parents.father.occupationType === 'employed' && student.parents.father.status === 'alive') || (student.parents.mother && student.parents.mother.occupationType === 'employed' && student.parents.mother.status === 'alive'))) ? (
+                            <span className="badge badge-success">
+                              {getTotalProfessionalContacts(student)} Contact(s)
+                            </span>
+                          ) : (
+                            <span className="badge badge-gray">None</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="action-buttons">
+                            <button
+                              className="btn-view"
+                              onClick={() => handleViewDetails(student)}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="btn-delete"
+                              onClick={() => handleDeleteStudent(student.id, student.studentName)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="pagination-controls">
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    First
+                  </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="page-numbers">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`btn ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
                   </div>
                   
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="pagination-controls">
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => setCurrentPage(1)}
-                        disabled={currentPage === 1}
-                      >
-                        First
-                      </button>
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        Previous
-                      </button>
-                      
-                      <div className="page-numbers">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          
-                          return (
-                            <button
-                              key={pageNum}
-                              className={`btn ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setCurrentPage(pageNum)}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next
-                      </button>
-                      <button 
-                        className="btn btn-secondary" 
-                        onClick={() => setCurrentPage(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        Last
-                      </button>
-                    </div>
-                  )}
-                </>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                  </button>
+                </div>
               )}
             </>
           )}

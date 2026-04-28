@@ -96,7 +96,7 @@ function Header() {
           </div>
           
           {/* User Menu */}
-          {!isAuthPage && (isAuthenticated() || !!sessionStudentEmail) && menuEmail && (
+          {(isAuthenticated() || !!sessionStudentEmail) && menuEmail && (
             <div className="user-menu">
               <button 
                 className="user-button"

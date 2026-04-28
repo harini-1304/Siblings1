@@ -387,20 +387,16 @@
   padding: 30px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  overflow: visible;
 }
 
 .table-container {
   overflow-x: auto;
-  overflow-y: visible;
-  position: relative;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  position: relative;
 }
 
 .data-table thead {
@@ -862,59 +858,3 @@
   color: #0066cc;
   font-weight: 600;
 }
-
-/* Additional Text Search Filters Section */
-.additional-filters-section {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.filter-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-
-.filter-group-compact {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 180px;
-  position: relative;
-}
-
-.filter-group-compact label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.filter-input-compact {
-  padding: 10px 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
-  transition: all 0.2s;
-  background: #f9f9f9;
-}
-
-.filter-input-compact:focus {
-  outline: none;
-  border-color: #e74c3c;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-}
-
-.filter-input-compact::placeholder {
-  color: #999;
-}
-

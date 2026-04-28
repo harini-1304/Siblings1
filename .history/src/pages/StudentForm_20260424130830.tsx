@@ -166,7 +166,6 @@ function StudentForm() {
     officeAddress: '',
     officeContactNumber: '',
     officeEmail: '',
-    workCity: '',
     businessName: '',
     businessType: '',
     businessIndustry: '',
@@ -297,8 +296,7 @@ function StudentForm() {
       businessRole: '',
       businessAddress: '',
       company: '',
-      city: '',
-      workCity: ''
+      city: ''
     }]);
   };
 

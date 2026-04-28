@@ -213,52 +213,12 @@ function FacultyDashboard() {
       // From Siblings in Engineering/Professional Field
       if (student.hasSiblingsInIT && student.siblings && student.siblings.length > 0) {
         student.siblings.forEach(sibling => {
-          // Check both city and workCity fields
           if (sibling.city) {
             const normalizedCity = sibling.city.toLowerCase().trim();
             const correctedCity = cityMap[normalizedCity] || sibling.city;
             citySet.add(correctedCity);
           }
-          if (sibling.workCity) {
-            const normalizedCity = sibling.workCity.toLowerCase().trim();
-            const correctedCity = cityMap[normalizedCity] || sibling.workCity;
-            citySet.add(correctedCity);
-          }
         });
-      }
-      
-      // From Parents' work city and office address
-      if (student.parents) {
-        if (student.parents.father?.workCity) {
-          const normalizedCity = student.parents.father.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.father.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.father?.officeAddress) {
-          const normalizedCity = student.parents.father.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.father.officeAddress;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.mother?.workCity) {
-          const normalizedCity = student.parents.mother.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.mother.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.mother?.officeAddress) {
-          const normalizedCity = student.parents.mother.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.mother.officeAddress;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.guardian?.workCity) {
-          const normalizedCity = student.parents.guardian.workCity.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.guardian.workCity;
-          citySet.add(correctedCity);
-        }
-        if (student.parents.guardian?.officeAddress) {
-          const normalizedCity = student.parents.guardian.officeAddress.toLowerCase().trim();
-          const correctedCity = cityMap[normalizedCity] || student.parents.guardian.officeAddress;
-          citySet.add(correctedCity);
-        }
       }
     });
     return Array.from(citySet).sort();
@@ -500,7 +460,7 @@ function FacultyDashboard() {
         if (student.siblings && student.siblings.length > 0) {
           allContacts.push(...student.siblings.map(sibling => ({
             ...sibling,
-            workCity: sibling.workCity || sibling.city,
+            workCity: sibling.city,
             designation: sibling.designation,
             company: sibling.company || sibling.organizationName || sibling.businessName
           })));
@@ -511,7 +471,7 @@ function FacultyDashboard() {
           allContacts.push({
             designation: student.parents.father.designation,
             company: student.parents.father.organizationName || student.parents.father.businessName,
-            workCity: student.parents.father.workCity || student.parents.father.officeAddress
+            workCity: student.parents.father.officeAddress // Use office address as proxy for city
           });
         }
         
@@ -520,7 +480,7 @@ function FacultyDashboard() {
           allContacts.push({
             designation: student.parents.mother.designation,
             company: student.parents.mother.organizationName || student.parents.mother.businessName,
-            workCity: student.parents.mother.workCity || student.parents.mother.officeAddress
+            workCity: student.parents.mother.officeAddress // Use office address as proxy for city
           });
         }
         
@@ -560,7 +520,6 @@ function FacultyDashboard() {
     setSectionInput('');
     setCityInput('');
     setDesignationInput('');
-    setCompanyInput('');
     setCurrentPage(1);
   };
 
@@ -776,28 +735,8 @@ function FacultyDashboard() {
                   const value = e.target.value;
                   setDesignationInput(value);
                   setFilterDesignation(value);
-                  if (value) setShowDesignationDropdown(true);
                 }}
-                onFocus={() => designationInput && setShowDesignationDropdown(true)}
               />
-              {showDesignationDropdown && filteredDesignations.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowDesignationDropdown(false)}>
-                  {filteredDesignations.map((designation, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setDesignationInput(designation);
-                        setFilterDesignation(designation);
-                        setShowDesignationDropdown(false);
-                      }}
-                    >
-                      {designation}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="filter-group-compact">
@@ -806,33 +745,9 @@ function FacultyDashboard() {
                 type="text"
                 className="filter-input-compact"
                 placeholder="Search company..."
-                value={companyInput}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setCompanyInput(value);
-                  setFilterCompany(value);
-                  if (value) setShowCompanyDropdown(true);
-                }}
-                onFocus={() => companyInput && setShowCompanyDropdown(true)}
+                value={filterCompany}
+                onChange={(e) => setFilterCompany(e.target.value)}
               />
-              {showCompanyDropdown && filteredCompanies.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCompanyDropdown(false)}>
-                  {filteredCompanies.map((company, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCompanyInput(company);
-                        setFilterCompany(company);
-                        setShowCompanyDropdown(false);
-                      }}
-                    >
-                      {company}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="filter-group-compact">
@@ -846,28 +761,8 @@ function FacultyDashboard() {
                   const value = e.target.value;
                   setCityInput(value);
                   setFilterCity(value);
-                  if (value) setShowCityDropdown(true);
                 }}
-                onFocus={() => cityInput && setShowCityDropdown(true)}
               />
-              {showCityDropdown && filteredCities.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCityDropdown(false)}>
-                  {filteredCities.map((city, index) => (
-                    <div
-                      key={index}
-                      className="autocomplete-item"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setCityInput(city);
-                        setFilterCity(city);
-                        setShowCityDropdown(false);
-                      }}
-                    >
-                      {city}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -449,8 +449,11 @@ def student_verify_otp():
         students_collection = collections['students']
 
         student = students_collection.find_one({
-            'roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
-            'email': {'$regex': f'^{email}$', '$options': 'i'}  # Case-insensitive match
+            'basic_info.roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
         })
 
         if not student:

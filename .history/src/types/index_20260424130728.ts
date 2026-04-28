@@ -123,7 +123,6 @@ export interface Student {
     businessAddress?: string;
     company: string;
     city: string;
-    workCity?: string;
   }[];
   
   // Relatives/Friends/Neighbors in Engineering/Professional field

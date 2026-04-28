@@ -166,7 +166,6 @@ function StudentForm() {
     officeAddress: '',
     officeContactNumber: '',
     officeEmail: '',
-    workCity: '',
     businessName: '',
     businessType: '',
     businessIndustry: '',
@@ -297,8 +296,7 @@ function StudentForm() {
       businessRole: '',
       businessAddress: '',
       company: '',
-      city: '',
-      workCity: ''
+      city: ''
     }]);
   };
 
@@ -1403,18 +1401,6 @@ function StudentForm() {
                       onChange={(e) => updateSibling(index, 'officeAddress', e.target.value)}
                       required
                       rows={2}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Work City *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g., Bangalore, Chennai, Hyderabad"
-                      value={sibling.workCity || ''}
-                      onChange={(e) => updateSibling(index, 'workCity', e.target.value)}
-                      required
                     />
                   </div>
 

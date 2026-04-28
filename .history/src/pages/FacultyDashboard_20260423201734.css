@@ -886,7 +886,6 @@
   gap: 6px;
   flex: 1;
   min-width: 180px;
-  position: relative;
 }
 
 .filter-group-compact label {

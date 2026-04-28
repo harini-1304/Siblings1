@@ -849,9 +849,10 @@ function FacultyDashboard() {
                   if (value) setShowCityDropdown(true);
                 }}
                 onFocus={() => cityInput && setShowCityDropdown(true)}
+                onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
               />
               {showCityDropdown && filteredCities.length > 0 && (
-                <div className="autocomplete-dropdown" onMouseLeave={() => setShowCityDropdown(false)}>
+                <div className="autocomplete-dropdown">
                   {filteredCities.map((city, index) => (
                     <div
                       key={index}

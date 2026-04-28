@@ -389,21 +389,27 @@ def student_forgot_password():
         # Debug: Print search parameters
         print(f"🔍 Searching for student with email={email}, roll_number={roll_number}")
         
-        # Query using flat document structure (email and roll_number at top level)
+        # Try exact match first, then try case-insensitive regex match for roll_number
         student = students_collection.find_one({
-            'roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
-            'email': {'$regex': f'^{email}$', '$options': 'i'}  # Case-insensitive match
+            'basic_info.roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
         })
 
         if not student:
             # Debug: Show all students that match the email alone
             print(f"❌ No student found with roll_number={roll_number} AND email={email}")
             students_with_email = list(students_collection.find({
-                'email': {'$regex': f'^{email}$', '$options': 'i'}
+                '$or': [
+                    {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                    {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+                ]
             }))
             print(f"📧 Students with email {email}: {len(students_with_email)}")
             for s in students_with_email:
-                print(f"   - Roll: {s.get('roll_number')}, Email: {s.get('email')}, Name: {s.get('student_name')}")
+                print(f"   - Roll: {s.get('basic_info', {}).get('roll_number')}, Email: {s.get('basic_info', {}).get('college_mail') or s.get('basic_info', {}).get('personal_mail')}")
             
             return jsonify({'error': 'No matching student record found'}), 404
 
@@ -449,8 +455,11 @@ def student_verify_otp():
         students_collection = collections['students']
 
         student = students_collection.find_one({
-            'roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
-            'email': {'$regex': f'^{email}$', '$options': 'i'}  # Case-insensitive match
+            'basic_info.roll_number': {'$regex': f'^{roll_number}$', '$options': 'i'},  # Case-insensitive match
+            '$or': [
+                {'basic_info.personal_mail': {'$regex': f'^{email}$', '$options': 'i'}},
+                {'basic_info.college_mail': {'$regex': f'^{email}$', '$options': 'i'}}
+            ]
         })
 
         if not student:

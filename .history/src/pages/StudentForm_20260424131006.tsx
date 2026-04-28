@@ -297,8 +297,7 @@ function StudentForm() {
       businessRole: '',
       businessAddress: '',
       company: '',
-      city: '',
-      workCity: ''
+      city: ''
     }]);
   };
 

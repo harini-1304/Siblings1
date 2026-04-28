@@ -30,13 +30,6 @@ function Header() {
 
   // Get user email from localStorage when component mounts
   useEffect(() => {
-    // Clear user info on auth pages
-    if (isAuthPage) {
-      setUserEmail(null);
-      setSessionStudentEmail(null);
-      return;
-    }
-
     const email = extractEmailFromToken();
     setUserEmail(email);
     setSessionStudentEmail(sessionStorage.getItem('studentEmail'));
@@ -63,7 +56,7 @@ function Header() {
       window.removeEventListener('authTokenUpdated', handleAuthTokenUpdated);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [isAuthPage]);
+  }, []);
 
   const handleLogout = () => {
     const hasFacultyToken = !!localStorage.getItem('token');
@@ -96,7 +89,7 @@ function Header() {
           </div>
           
           {/* User Menu */}
-          {!isAuthPage && (isAuthenticated() || !!sessionStudentEmail) && menuEmail && (
+          {(isAuthenticated() || !!sessionStudentEmail) && menuEmail && (
             <div className="user-menu">
               <button 
                 className="user-button"
